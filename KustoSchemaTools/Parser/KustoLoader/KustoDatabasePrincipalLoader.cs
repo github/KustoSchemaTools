@@ -1,5 +1,5 @@
 ﻿using Kusto.Data.Common;
-using KustoSchemaTools.KustoTypes.WHCFG;
+using KustoSchemaTools.KustoTypes.DB;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 

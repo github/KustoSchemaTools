@@ -1,6 +1,6 @@
 ﻿using KustoSchemaTools.Model;
 
-namespace KustoSchemaTools.KustoTypes.WHCFG
+namespace KustoSchemaTools.KustoTypes.DB
 {
     public class MaterializedViewRows
     {
