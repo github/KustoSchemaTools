@@ -1,8 +1,7 @@
-﻿using FlowLoop.Shared.Kusto;
-using Kusto.Cloud.Platform.Utils;
+﻿using Kusto.Cloud.Platform.Utils;
 using Kusto.Data.Common;
-using KustoSchemaRollout.Model;
 using KustoSchemaTools.Helpers;
+using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 
 namespace KustoSchemaTools.Parser.KustoLoader

@@ -1,6 +1,6 @@
-﻿using KustoSchemaRollout.Model;
-using KustoSchemaTools.Changes;
+﻿using KustoSchemaTools.Changes;
 using KustoSchemaTools.Helpers;
+using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using Microsoft.Extensions.Logging;
 using System.Text;
@@ -20,7 +20,7 @@ namespace KustoSchemaTools
         public YamlDatabaseHandlerFactory YamlDatabaseHandlerFactory { get; }
         public KustoDatabaseHandlerFactory KustoDatabaseHandlerFactory { get; }
 
-        public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path, string databaseName, string opertationsCluster)
+        public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path, string databaseName)
         {
 
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
@@ -66,7 +66,7 @@ namespace KustoSchemaTools
             return (sb.ToString(), isValid);
         }
 
-        public async Task Import(string path, string databaseName, string opertationsCluster, bool includeColumns)
+        public async Task Import(string path, string databaseName, bool includeColumns)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
@@ -87,7 +87,7 @@ namespace KustoSchemaTools
         }
 
 
-        public async Task Apply(string path, string databaseName, string opertationsCluster)
+        public async Task Apply(string path, string databaseName)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);

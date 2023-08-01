@@ -1,5 +1,4 @@
-﻿using FlowLoop.Shared.Kusto;
-using KustoSchemaRollout.Model;
+﻿using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 
 namespace KustoSchemaTools.Parser

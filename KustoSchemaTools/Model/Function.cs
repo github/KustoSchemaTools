@@ -1,8 +1,7 @@
 ﻿using KustoSchemaTools.Changes;
-using KustoSchemaTools.Model;
 using YamlDotNet.Serialization;
 
-namespace KustoSchemaRollout.Model
+namespace KustoSchemaTools.Model
 {
     public class Function : IKustoBaseEntity
     {
@@ -11,7 +10,7 @@ namespace KustoSchemaRollout.Model
         public string Folder { get; set; } = "";
         public string DocString { get; set; } = "";
         public string Parameters { get; set; } = "";
-        [YamlMember(ScalarStyle =YamlDotNet.Core.ScalarStyle.Literal)]
+        [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
 
         public string Body { get; set; }
 
@@ -21,7 +20,7 @@ namespace KustoSchemaRollout.Model
                 .Where(p => p.GetValue(this) != null && p.Name != "Body" && p.Name != "Parameters")
                 .Select(p => $"{p.Name}=\"{p.GetValue(this)}\"");
             var propertiesString = string.Join(", ", properties);
-            return new List<DatabaseScriptContainer> { new DatabaseScriptContainer( "CreateOrAlterFunction", 40,  $".create-or-alter function with({propertiesString}) {name} ({Parameters}) {{ {Body} }}")};
+            return new List<DatabaseScriptContainer> { new DatabaseScriptContainer("CreateOrAlterFunction", 40, $".create-or-alter function with({propertiesString}) {name} ({Parameters}) {{ {Body} }}") };
         }
     }
 

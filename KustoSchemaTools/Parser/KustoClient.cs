@@ -4,9 +4,8 @@ using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
 using Kusto.Ingest;
-using KustoSchemaTools.Parser;
 
-namespace FlowLoop.Shared.Kusto
+namespace KustoSchemaTools.Parser
 {
     public class KustoClient
     {

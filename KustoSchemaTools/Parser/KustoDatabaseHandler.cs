@@ -1,7 +1,6 @@
-﻿using FlowLoop.Shared.Kusto;
-using Kusto.Data;
-using KustoSchemaRollout.Model;
+﻿using Kusto.Data;
 using KustoSchemaTools.Changes;
+using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 using Microsoft.Extensions.Logging;
 using System.Data;

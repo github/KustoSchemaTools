@@ -1,9 +1,8 @@
 ﻿using KustoSchemaTools.Changes;
-using KustoSchemaTools.Model;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
-namespace KustoSchemaRollout.Model
+namespace KustoSchemaTools.Model
 {
     public class MaterializedView : IKustoBaseEntity
     {
@@ -28,8 +27,8 @@ namespace KustoSchemaRollout.Model
                 .Where(p => p.GetValue(this) != null && p.Name != "Query" && p.Name != "Source" && p.Name != "Kind")
                 .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
             scripts.Add(new DatabaseScriptContainer("CreateOrAlterMaterializedView", 40, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
-            
-            if(RetentionAndCachePolicy != null)
+
+            if (RetentionAndCachePolicy != null)
                 scripts.AddRange(RetentionAndCachePolicy.CreateScripts(name, "materialized-view"));
             return scripts;
         }

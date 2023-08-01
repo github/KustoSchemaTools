@@ -1,5 +1,5 @@
-﻿using KustoSchemaRollout.Model;
-using KustoSchemaTools.Helpers;
+﻿using KustoSchemaTools.Helpers;
+using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 
 namespace KustoSchemaTools.Parser

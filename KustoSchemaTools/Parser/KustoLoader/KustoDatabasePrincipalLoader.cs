@@ -1,6 +1,4 @@
-﻿using FlowLoop.Shared.Kusto;
-using Kusto.Data.Common;
-using KustoSchemaRollout.Model;
+﻿using Kusto.Data.Common;
 using KustoSchemaTools.KustoTypes.WHCFG;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;

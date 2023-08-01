@@ -1,4 +1,4 @@
-﻿using KustoSchemaRollout.Model;
+﻿using KustoSchemaTools.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;

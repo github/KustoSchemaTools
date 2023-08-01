@@ -1,9 +1,8 @@
 ﻿using KustoSchemaTools.Changes;
 using KustoSchemaTools.Helpers;
-using KustoSchemaTools.Model;
 using Newtonsoft.Json;
 
-namespace KustoSchemaRollout.Model
+namespace KustoSchemaTools.Model
 {
     public class Table : IKustoBaseEntity
     {
@@ -25,7 +24,7 @@ namespace KustoSchemaRollout.Model
                 var properties = string.Join(", ", GetType().GetProperties()
                     .Where(p => p.GetValue(this) != null && (p.Name == "Folder" || p.Name == "DocString"))
                     .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
-     
+
                 scripts.Add(new DatabaseScriptContainer("CreateMergeTable", 30, $".create-merge table {name} ({string.Join(", ", Columns.Select(c => $"{c.Key}:{c.Value}"))})"));
             }
             else
@@ -33,12 +32,12 @@ namespace KustoSchemaRollout.Model
 
             }
 
-            scripts.Add(new DatabaseScriptContainer("TableFolder", 31, $".alter table {name} folder '{Folder}'")); 
+            scripts.Add(new DatabaseScriptContainer("TableFolder", 31, $".alter table {name} folder '{Folder}'"));
             scripts.Add(new DatabaseScriptContainer("TableDocString", 31, $".alter table {name} docstring '{DocString}'"));
-            var ups = UpdatePolicies?? new List<UpdatePolicy>();
+            var ups = UpdatePolicies ?? new List<UpdatePolicy>();
             var policies = JsonConvert.SerializeObject(ups, Serialization.JsonPascalCase);
             scripts.Add(new DatabaseScriptContainer("TableUpdatePolicy", 50, $".alter table {name} policy update ```{policies}```"));
-            
+
             if (RetentionAndCachePolicy != null)
             {
                 scripts.AddRange(RetentionAndCachePolicy.CreateScripts(name, "table"));

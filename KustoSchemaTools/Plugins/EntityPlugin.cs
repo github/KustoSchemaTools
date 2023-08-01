@@ -1,5 +1,5 @@
-﻿using KustoSchemaRollout.Model;
-using KustoSchemaTools.Helpers;
+﻿using KustoSchemaTools.Helpers;
+using KustoSchemaTools.Model;
 
 namespace KustoSchemaTools.Plugins
 {

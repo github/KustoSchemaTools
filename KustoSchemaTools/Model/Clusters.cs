@@ -1,4 +1,4 @@
-﻿namespace KustoSchemaRollout.Model
+﻿namespace KustoSchemaTools.Model
 {
     public class Clusters
     {

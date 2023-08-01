@@ -1,4 +1,4 @@
-﻿using KustoSchemaRollout.Model;
+﻿using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Changes

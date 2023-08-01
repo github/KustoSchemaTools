@@ -1,5 +1,4 @@
 ﻿using Kusto.Language;
-using KustoSchemaRollout.Model;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using System.Text;

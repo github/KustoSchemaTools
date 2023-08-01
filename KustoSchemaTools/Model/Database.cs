@@ -1,6 +1,4 @@
-﻿using KustoSchemaTools.Model;
-
-namespace KustoSchemaRollout.Model
+﻿namespace KustoSchemaTools.Model
 {
     public class Database
     {
@@ -8,7 +6,7 @@ namespace KustoSchemaRollout.Model
         public string Team { get; set; } = "";
         public RetentionAndCachePolicy DefaultRetentionAndCache { get; set; } = new RetentionAndCachePolicy();
 
-        public List<AADObject> Monitors { get; set; } = new List<AADObject>(); 
+        public List<AADObject> Monitors { get; set; } = new List<AADObject>();
 
         public List<AADObject> Viewers { get; set; } = new List<AADObject>();
         public List<AADObject> UnrestrictedViewers { get; set; } = new List<AADObject>();
@@ -18,12 +16,12 @@ namespace KustoSchemaRollout.Model
 
         public Dictionary<string, Table> Tables { get; set; } = new Dictionary<string, Table>();
 
-        public Dictionary<string, MaterializedView> MaterializedViews { get; set; } = new Dictionary<string, MaterializedView>(); 
+        public Dictionary<string, MaterializedView> MaterializedViews { get; set; } = new Dictionary<string, MaterializedView>();
 
-        public Dictionary<string, Function> Functions { get; set; } = new Dictionary<string, Function>(); 
+        public Dictionary<string, Function> Functions { get; set; } = new Dictionary<string, Function>();
 
         public List<DatabaseScript> Scripts { get; set; } = new List<DatabaseScript>();
-               
+
     }
 
 }
