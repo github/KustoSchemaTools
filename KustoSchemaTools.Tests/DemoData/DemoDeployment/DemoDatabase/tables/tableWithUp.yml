@@ -1,0 +1,6 @@
+folder: myFolder
+retentionAndCachePolicy:
+  retention: 120d
+updatePolicies:
+- source: sourceTable
+  query: UP()

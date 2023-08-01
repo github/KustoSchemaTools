@@ -1,0 +1,3 @@
+connections:
+- name: test
+  url: test.eastus

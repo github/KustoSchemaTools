@@ -1,0 +1,21 @@
+name: DemoDatabase
+team: 'Test team'
+defaultRetentionAndCache:
+  retention: 90d
+  hotCache: 30d
+viewers:
+- name: User-Viewer
+  id: aaduser=ac8a062c-d5fb-41d5-a5a9-b3cc9a8c34f4;7396cfeb-2920-488f-b0bb-81a584d34a24
+- name: Test-AAD-Security-Group
+  id: aadgroup=f6c69f8c-c25c-4cfd-8a4c-ba03a07b68fb;7396cfeb-2920-488f-b0bb-81a584d34a24
+
+admins:
+- name: SPN-ADMIN
+  id: aadapp=f678ce29-8f92-4d6e-b95d-f2ed8fa7713f;7396cfeb-2920-488f-b0bb-81a584d34a24
+
+tables:
+  sourceTable:
+    restrictedViewAccess: true
+    retentionAndCachePolicy:
+        hotCache: 120d
+

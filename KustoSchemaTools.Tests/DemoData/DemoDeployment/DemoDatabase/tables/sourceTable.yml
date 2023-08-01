@@ -1,0 +1,3 @@
+folder: myFolder
+retentionAndCachePolicy:
+  retention: 120d

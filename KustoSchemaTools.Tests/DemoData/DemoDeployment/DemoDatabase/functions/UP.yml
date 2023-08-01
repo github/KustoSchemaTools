@@ -1,0 +1,9 @@
+folder: test
+docString: test
+body: |-
+  sourceTable
+  | limit 100
+  | extend ingestion_time()
+  | where ingestion_time() > ago(1d)
+  | sample 100
+  | order by ingestion_time() desc
