@@ -2,8 +2,8 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/KustoSchemaRollout
 /KustoSchemaTools.Tests/bin
 /KustoSchemaTools.Tests/obj
 /KustoSchemaTools.Plugins/obj
 /KustoSchemaTools.Plugins/bin
+/.vs

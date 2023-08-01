@@ -24,7 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KustoSchemaTools.Plugins\KustoSchemaTools.Plugins.csproj" />
     <ProjectReference Include="..\KustoSchemaTools\KustoSchemaTools.csproj" />
   </ItemGroup>
 
