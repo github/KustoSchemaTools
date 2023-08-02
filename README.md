@@ -9,6 +9,7 @@ A second project "[KustoSchemaToolsAction](https://github.com/github/KustoSchema
 The `database` object holds all schema related information for a Kusto database. It can be loaded from, or written to a cluster using the `KustoDatabaseHandler` which can be created by the `KustoDatabaseHandlerFactory`.There are several steps involved for loading a all relevant information from a kusto database into the `database` object. These are covered by different plugins, which can be configured for the `KustoDatabaseHandlerFactory`. 
 
 ```csharp
+
 var dbFactory = new KustoDatabaseHandlerFactory(sp.GetService<ILogger<KustoDatabaseHandler>>())
     .WithPlugin<KustoDatabasePrincipalLoader>()
     .WithPlugin<KustoDatabaseRetentionAndCacheLoader>()
@@ -16,17 +17,20 @@ var dbFactory = new KustoDatabaseHandlerFactory(sp.GetService<ILogger<KustoDatab
     .WithPlugin<KustoFunctionBulkLoader>()
     .WithPlugin<KustoMaterializedViewBulkLoader>()
     .WithPlugin<DatabaseCleanup>()
+    
 ```
 
 
  For syncrhonizing it to files, the `YamlDatabaseHandler` and the `YamlDatabaseHandlerFactory` are the right tools. To prevent super large files, there are plugins that handle reading and writing functions, tables and materialized views to separate files and folders. They can be configured for the `YamlDatabaseHandlerFactory`.
 
 ```csharp
+
 var yamlFactory = new YamlDatabaseHandlerFactory()
     .WithPlugin(new TablePlugin())
     .WithPlugin(new FunctionPlugin())
     .WithPlugin(new MaterializedViewsPlugin())
     .WithPlugin<DatabaseCleanup>();
+
 ```
 
 Additional features can be added with custom plugins. A sample for `table groups`, where the some parts of the schema are defined once, but is applied for several tables can be found in [here](https://github.com/github/KustoSchemaToolsAction/blob/main/KustoSchemaCLI/Plugins/TableGroupPlugin.cs).
