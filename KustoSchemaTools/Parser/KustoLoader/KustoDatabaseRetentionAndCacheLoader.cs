@@ -15,9 +15,9 @@ namespace KustoSchemaTools.Parser.KustoLoader
                 database.DefaultRetentionAndCache = new();
             }
 
-            var response = await kusto.Client.ExecuteQueryAsync("operations", retentionScript, new ClientRequestProperties());
+            var response = await kusto.Client.ExecuteQueryAsync(databaseName, retentionScript, new ClientRequestProperties());
             database.DefaultRetentionAndCache.Retention = response.ToScalar<string>(); 
-            response = await kusto.Client.ExecuteQueryAsync("operations", hotChacheScript, new ClientRequestProperties());
+            response = await kusto.Client.ExecuteQueryAsync(databaseName, hotChacheScript, new ClientRequestProperties());
             database.DefaultRetentionAndCache.HotCache = response.ToScalar<string>();
         }
     }

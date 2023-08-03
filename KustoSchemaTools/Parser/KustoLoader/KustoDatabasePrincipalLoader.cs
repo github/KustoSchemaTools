@@ -17,7 +17,7 @@ namespace KustoSchemaTools.Parser.KustoLoader
 
         public async Task Load(Database database, string databaseName, KustoClient kusto)
         {
-            var response = await kusto.Client.ExecuteQueryAsync("operations", script, new ClientRequestProperties());
+            var response = await kusto.Client.ExecuteQueryAsync(databaseName, script, new ClientRequestProperties());
             var principals = response.As<PrincipalRow>().ToDictionary(itm => itm.Role, itm => itm.Users);
             database.Admins = principals.ContainsKey("Admin") ? principals["Admin"] : new List<AADObject>();
             database.Users = principals.ContainsKey("User") ? principals["User"] : new List<AADObject>();

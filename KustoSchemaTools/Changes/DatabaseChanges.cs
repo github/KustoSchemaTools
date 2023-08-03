@@ -16,7 +16,7 @@ namespace KustoSchemaTools.Changes
                 if (oldState.Scripts != null)
                     otherFromScripts.AddRange(oldState.Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
                 if (oldState.DefaultRetentionAndCache != null)
-                    otherFromScripts.AddRange(oldState.DefaultRetentionAndCache.CreateScripts(oldState.Name, "database"));
+                    otherFromScripts.AddRange(oldState.DefaultRetentionAndCache.CreateScripts(name, "database"));
                 otherFromScripts.Add(new DatabaseScriptContainer("Team", -1, oldState.Team));
             }
 
@@ -24,7 +24,7 @@ namespace KustoSchemaTools.Changes
             if (newState.Scripts != null)
                 otherToScripts.AddRange(newState.Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
             if (newState.DefaultRetentionAndCache != null)
-                otherToScripts.AddRange(newState.DefaultRetentionAndCache.CreateScripts(newState.Name, "database"));
+                otherToScripts.AddRange(newState.DefaultRetentionAndCache.CreateScripts(name, "database"));
             otherToScripts.Add(new DatabaseScriptContainer("Team", -1, newState.Team));
 
             if (otherToScripts.Count > 0)
