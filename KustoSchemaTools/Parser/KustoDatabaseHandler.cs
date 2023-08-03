@@ -10,16 +10,14 @@ namespace KustoSchemaTools.Parser
 {
     public class KustoDatabaseHandler : IDatabaseHandler
     {
-        public KustoDatabaseHandler(string operationsClusterUrl, string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler> logger, List<IKustoBulkEntitiesLoader> plugins)
+        public KustoDatabaseHandler(string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler> logger, List<IKustoBulkEntitiesLoader> plugins)
         {
-            OperationsClusterUrl = operationsClusterUrl;
             ClusterUrl = clusterUrl;
             DatabaseName = databaseName;
             Logger = logger;
             Plugins = plugins;
         }
 
-        public string OperationsClusterUrl { get; }
         public string ClusterUrl { get; }
         public string DatabaseName { get; }
         public ILogger<KustoDatabaseHandler> Logger { get; }
@@ -27,7 +25,7 @@ namespace KustoSchemaTools.Parser
 
         public async Task<Database> LoadAsync()
         {
-            var client = new KustoClient(OperationsClusterUrl);
+            var client = new KustoClient(ClusterUrl);
             var database = new Database();
             foreach (var plugin in Plugins)
             {
