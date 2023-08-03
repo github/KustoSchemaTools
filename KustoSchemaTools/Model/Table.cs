@@ -7,12 +7,12 @@ namespace KustoSchemaTools.Model
     public class Table : IKustoBaseEntity
     {
 
-        public string Folder { get; set; } = "";
+        public string Folder { get; set; }
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
         public Dictionary<string, string> Columns { get; set; }
         public List<UpdatePolicy> UpdatePolicies { get; set; }
         public List<DatabaseScript> Scripts { get; set; }
-        public string DocString { get; set; } = "";
+        public string DocString { get; set; }
         public bool RestrictedViewAccess { get; set; } = false;
         public string? RowLevelSecurity { get; set; }
 
