@@ -31,7 +31,7 @@ namespace KustoSchemaTools.Parser
             var database = new Database();
             foreach (var plugin in Plugins)
             {
-                plugin.Load(database, DatabaseName, client);
+                await plugin.Load(database, DatabaseName, client);
 
             }
             return database;
