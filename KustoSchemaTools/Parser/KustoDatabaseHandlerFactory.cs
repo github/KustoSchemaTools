@@ -24,12 +24,11 @@ namespace KustoSchemaTools.Parser
             return this;
         }
 
-        public string OperationsCLuster { get; set; } = "ghdwprod.eastus";
         public ILogger<KustoDatabaseHandler> Logger { get; set; }
 
         public IDatabaseHandler Create(string cluster, string database)
         {
-            return new KustoDatabaseHandler(OperationsCLuster, cluster, database, Logger, Plugins);
+            return new KustoDatabaseHandler(cluster, database, Logger, Plugins);
         }
 
     }
