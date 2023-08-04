@@ -1,4 +1,7 @@
-﻿using Kusto.Language;
+﻿using DiffPlex;
+using DiffPlex.DiffBuilder;
+using DiffPlex.DiffBuilder.Model;
+using Kusto.Language;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using System.Text;
@@ -47,17 +50,36 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine($"<td colspan=\"1\"><b>{logo}<b></td>");
                 sb.AppendLine($"<td colspan =\"11\"><b>{change.Kind}<b></td>");
                 sb.AppendLine($"</tr>");
+
+
+                var beforeText = before?.Text.PrettifyKql() ?? "";
+                var afterText = change.Text.PrettifyKql();
+                var differ = new Differ();
+                var diff = InlineDiffBuilder.Diff(beforeText, afterText, false);
+
                 if (before != null)
                 {
                     sb.AppendLine("<tr>");
                     sb.AppendLine($"    <td colspan=\"2\">From:</td>");
-                    sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{before.Text.PrettifyKql()}</pre></td>");
+                    sb.AppendLine($"    <td colspan=\"10\">");
+
+                    sb.AppendLine(FormatChangeDiff(diff.Lines.Where(itm => itm.Type == ChangeType.Deleted || itm.Type == ChangeType.Unchanged)));
+
+                    sb.AppendLine();
+                    sb.AppendLine("</td>");
                     sb.AppendLine("</tr>");
                 }
+
                 sb.AppendLine("<tr>");
                 sb.AppendLine($"    <td colspan=\"2\">{addActionText}:</td>");
-                sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Text.PrettifyKql()}</pre></td>");
+                sb.AppendLine($"    <td colspan=\"10\">");
+
+                sb.AppendLine(FormatChangeDiff(diff.Lines.Where(itm => itm.Type == ChangeType.Inserted || itm.Type == ChangeType.Unchanged)));
+
+                sb.AppendLine();
+                sb.AppendLine("</td>");
                 sb.AppendLine("</tr>");
+
 
                 if (change.IsValid == false)
                 {
@@ -72,6 +94,40 @@ namespace KustoSchemaTools.Changes
             }
             sb.AppendLine("</table>");
             Markdown = sb.ToString();
+        }
+
+
+        public string FormatChangeDiff(IEnumerable<DiffPiece> diffs)
+        {
+            var allDiffs = diffs.ToList();
+
+            if (allDiffs.Count <= 1)
+            {
+                return allDiffs.Any() ?  allDiffs[0].Text : "";
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine();
+            sb.AppendLine("```diff");
+            foreach (var diff in allDiffs) 
+            {
+                switch (diff.Type)
+                {
+                    case ChangeType.Deleted:
+                        sb.AppendLine($"- {diff.Text}");
+                        break;
+                    case ChangeType.Inserted:
+                        sb.AppendLine($"+ {diff.Text}");
+                        break;
+                    case ChangeType.Unchanged:
+                        sb.AppendLine($"{diff.Text}");
+                        break;
+                    default: throw new NotSupportedException();
+                }
+            }
+            sb.AppendLine("```");
+            sb.AppendLine();
+            return sb.ToString();
         }
     }
 
