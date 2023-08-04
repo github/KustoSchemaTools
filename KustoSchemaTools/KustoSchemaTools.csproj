@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Inflector" Version="1.0.0" />
     <PackageReference Include="Kusto.Toolkit" Version="1.5.0" />
     <PackageReference Include="Markdig" Version="0.31.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Data" Version="11.3.2" />
@@ -15,7 +16,7 @@
     <PackageReference Include="Microsoft.Azure.Kusto.Tools" Version="11.3.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	  <PackageReference Include="YamlDotNet" Version="13.1.1" />
+    <PackageReference Include="YamlDotNet" Version="13.1.1" />
   </ItemGroup>
 
 </Project>

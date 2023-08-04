@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace KustoSchemaTools.Helpers
 {
@@ -33,7 +32,7 @@ namespace KustoSchemaTools.Helpers
         public static ISerializer YamlPascalCaseSerializer { get; } =
             new SerializerBuilder()
                 .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitDefaults | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitNull)
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .WithNamingConvention(new CamelCaseNamingConvention())
                 .WithAttributeOverride<Function>(
                     c => c.Body,
                     new YamlMemberAttribute
@@ -44,7 +43,7 @@ namespace KustoSchemaTools.Helpers
                 .Build();
         public static IDeserializer YamlPascalCaseDeserializer { get; } =
             new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .WithNamingConvention(new CamelCaseNamingConvention())
                 .Build();
 
         // Define a custom contract resolver that uses PascalCase naming convention
@@ -52,11 +51,18 @@ namespace KustoSchemaTools.Helpers
         {
             protected override string ResolvePropertyName(string propertyName)
             {
-                return base.ResolvePropertyName(PascalCaseNamingConvention.Instance.Apply(propertyName));
+                return base.ResolvePropertyName(Inflector.Inflector.Pascalize(propertyName));
             }
         }
 
-       
+        public class CamelCaseNamingConvention : INamingConvention
+        {
+            public string Apply(string value)
+            {
+                return Inflector.Inflector.Camelize(value);
+            }
+        }
+
         public static T Merge<T>(this T baseObject, T mergeObject)
         {
             var o1 = JObject.FromObject(baseObject, CloneJsonSerializer);

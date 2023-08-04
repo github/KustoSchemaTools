@@ -1,7 +1,6 @@
 ﻿using Kusto.Language;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
-using System.Diagnostics.Metrics;
 using System.Text;
 
 namespace KustoSchemaTools.Changes
@@ -50,24 +49,16 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine($"</tr>");
                 if (before != null)
                 {
-
-
-
-
-
-
                     sb.AppendLine("<tr>");
                     sb.AppendLine($"    <td colspan=\"2\">From:</td>");
                     sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{before.Text.PrettifyKql()}</pre></td>");
                     sb.AppendLine("</tr>");
                 }
-                else
-                {
-                    sb.AppendLine("<tr>");
-                    sb.AppendLine($"    <td colspan=\"2\">{addActionText}:</td>");
-                    sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Text.PrettifyKql()}</pre></td>");
-                    sb.AppendLine("</tr>");
-                }
+                sb.AppendLine("<tr>");
+                sb.AppendLine($"    <td colspan=\"2\">{addActionText}:</td>");
+                sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Text.PrettifyKql()}</pre></td>");
+                sb.AppendLine("</tr>");
+
                 if (change.IsValid == false)
                 {
                     foreach (var diagnostic in diagnostics)
