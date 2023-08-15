@@ -49,7 +49,7 @@ namespace KustoSchemaTools.Plugins
                 var yaml = Serialization.YamlPascalCaseSerializer.Serialize(entity.Value);
                 if (yaml.RowLength() >= MinFileLength)
                 {
-                    var entitySubfolderPath = Path.combine(path, SubFolder);
+                    var entitySubfolderPath = Path.Combine(path, SubFolder);
                     Directory.CreateDirectory(entitySubfolderPath);
                     await File.WriteAllTextAsync(Path.Combine(entitySubfolderPath, $"{entity.Key}.yml"), yaml);
                     dict.Remove(entity.Key);
