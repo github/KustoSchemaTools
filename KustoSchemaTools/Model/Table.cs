@@ -36,7 +36,8 @@ namespace KustoSchemaTools.Model
             scripts.Add(new DatabaseScriptContainer("TableDocString", 31, $".alter table {name} docstring '{DocString}'"));
             var ups = UpdatePolicies ?? new List<UpdatePolicy>();
             var policies = JsonConvert.SerializeObject(ups, Serialization.JsonPascalCase);
-            scripts.Add(new DatabaseScriptContainer("TableUpdatePolicy", 50, $".alter table {name} policy update ```{policies}```"));
+            var upPriority = ups.Any() ? 59 : 50;
+            scripts.Add(new DatabaseScriptContainer("TableUpdatePolicy", upPriority, $".alter table {name} policy update ```{policies}```"));
 
             if (RetentionAndCachePolicy != null)
             {
@@ -47,13 +48,17 @@ namespace KustoSchemaTools.Model
                 scripts.AddRange(Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
             }
 
+            var rvaPrio = RestrictedViewAccess ? 58 : 51;
+            scripts.Add(new DatabaseScriptContainer("RestrictedViewAccess", rvaPrio, $".alter table {name} policy restricted_view_access {(RestrictedViewAccess ? "true" : "false")}"));
+
+
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurityPolicy", 34, $".alter table {name} policy row_level_security {(string.IsNullOrEmpty(RowLevelSecurity) ? "disable" : $"enable \"{RowLevelSecurity}\" 'Restricted View Access'")}"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable \"{RowLevelSecurity}\""));
             }
             else
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 34, $".alter table {name} policy row_level_security disable 'Restricted View Access'"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".alter table {name} policy row_level_security disable"));
             }
             return scripts;
         }
