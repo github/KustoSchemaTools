@@ -48,13 +48,17 @@ namespace KustoSchemaTools.Model
                 scripts.AddRange(Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
             }
 
+            var rvaPrio = RestrictedViewAccess ? 58 : 51;
+            scripts.Add(new DatabaseScriptContainer("RestrictedViewAccess", rvaPrio, $".alter table {name} policy restricted_view_access {RestrictedViewAccess}"));
+
+
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurityPolicy", 60, $".alter table {name} policy row_level_security {(string.IsNullOrEmpty(RowLevelSecurity) ? "disable" : $"enable \"{RowLevelSecurity}\" 'Restricted View Access'")}"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable {RowLevelSecurity}"));
             }
             else
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 60, $".alter table {name} policy row_level_security disable 'Restricted View Access'"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".alter table {name} policy row_level_security disable"));
             }
             return scripts;
         }
