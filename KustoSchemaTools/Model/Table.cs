@@ -36,7 +36,8 @@ namespace KustoSchemaTools.Model
             scripts.Add(new DatabaseScriptContainer("TableDocString", 31, $".alter table {name} docstring '{DocString}'"));
             var ups = UpdatePolicies ?? new List<UpdatePolicy>();
             var policies = JsonConvert.SerializeObject(ups, Serialization.JsonPascalCase);
-            scripts.Add(new DatabaseScriptContainer("TableUpdatePolicy", 50, $".alter table {name} policy update ```{policies}```"));
+            var upPriority = ups.Any() ? 59 : 50;
+            scripts.Add(new DatabaseScriptContainer("TableUpdatePolicy", upPriority, $".alter table {name} policy update ```{policies}```"));
 
             if (RetentionAndCachePolicy != null)
             {
@@ -49,11 +50,11 @@ namespace KustoSchemaTools.Model
 
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurityPolicy", 34, $".alter table {name} policy row_level_security {(string.IsNullOrEmpty(RowLevelSecurity) ? "disable" : $"enable \"{RowLevelSecurity}\" 'Restricted View Access'")}"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurityPolicy", 60, $".alter table {name} policy row_level_security {(string.IsNullOrEmpty(RowLevelSecurity) ? "disable" : $"enable \"{RowLevelSecurity}\" 'Restricted View Access'")}"));
             }
             else
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 34, $".alter table {name} policy row_level_security disable 'Restricted View Access'"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 60, $".alter table {name} policy row_level_security disable 'Restricted View Access'"));
             }
             return scripts;
         }
