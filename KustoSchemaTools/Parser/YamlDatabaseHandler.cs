@@ -36,6 +36,10 @@ namespace KustoSchemaTools.Parser
         {
             var clone = database.Clone();
             var path = Path.Combine(Deployment, Database);
+            if(!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
 
             foreach (var plugin in Plugins)
             {
