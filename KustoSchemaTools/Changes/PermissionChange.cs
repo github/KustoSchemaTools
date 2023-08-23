@@ -54,7 +54,7 @@ namespace KustoSchemaTools.Changes
             var code = KustoCode.Parse(toScript.Text);
             var diagnostics = code.GetDiagnostics();
             scriptContainer.IsValid = diagnostics.Any() == false;
-            var logo = scriptContainer.IsValid.Value ? ":red_circle:" : ":green_circle:";
+            var logo = scriptContainer.IsValid.Value ? ":green_circle:" : ":red_circle:";
 
             var changed = From
                 .Join(To, itm => itm.Id, itm => itm.Id, (from, to) => new { from, to })
