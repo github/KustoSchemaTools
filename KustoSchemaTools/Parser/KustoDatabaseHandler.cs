@@ -26,7 +26,7 @@ namespace KustoSchemaTools.Parser
         public async Task<Database> LoadAsync()
         {
             var client = new KustoClient(ClusterUrl);
-            var database = new Database();
+            var database = new Database{ Name = DatabaseName };
             foreach (var plugin in Plugins)
             {
                 await plugin.Load(database, DatabaseName, client);
@@ -81,5 +81,5 @@ namespace KustoSchemaTools.Parser
         }
     }
 
-    
+
 }
