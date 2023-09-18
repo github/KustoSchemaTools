@@ -58,7 +58,7 @@ namespace KustoSchemaTools.Model
             }
             else
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".alter table {name} policy row_level_security disable"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".delete table {name} policy row_level_security"));
             }
             return scripts;
         }
