@@ -1,7 +1,11 @@
-﻿using Kusto.Language;
+﻿using DiffPlex.DiffBuilder;
+using DiffPlex;
+using Kusto.Language;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using System.Text;
+using System.Data;
+using DiffPlex.DiffBuilder.Model;
 
 namespace KustoSchemaTools.Changes
 {
@@ -14,7 +18,6 @@ namespace KustoSchemaTools.Changes
             Init();
         }
 
-
         private void Init()
         {
             var from = From?.CreateScripts(Entity).ToDictionary(itm => itm.Kind) ?? new Dictionary<string, DatabaseScriptContainer>();
@@ -23,23 +26,26 @@ namespace KustoSchemaTools.Changes
 
             if (to.Any() == false) return;
 
-
-            var changedTo = to.Where(itm => !from.ContainsKey(itm.Kind) || itm.Text.Equals(from[itm.Kind].Text) == false).ToList();
-
             StringBuilder sb = new StringBuilder($"## {Entity}");
             sb.AppendLine();
             sb.AppendLine("<table>");
 
-            foreach (var change in changedTo)
+            foreach (var change in to)
             {
-
-                var code = KustoCode.Parse(change.Text);
-                var diagnostics = code.GetDiagnostics();
-
-                change.IsValid = diagnostics.Any() == false || change.Order == -1;
-                Scripts.Add(change);
-
                 var before = from.ContainsKey(change.Kind) ? from[change.Kind] : null;
+                var beforeText = before?.Text ?? "";
+                var afterText = change.Text;
+                var differ = new Differ();
+                var diff = InlineDiffBuilder.Diff(beforeText, afterText, true);
+                if (diff.Lines.All(itm => itm.Type == ChangeType.Unchanged)) continue;
+
+                var code = KustoCode.Parse(change.Text);                
+
+                var diagnostics = code.GetDiagnostics();
+                change.IsValid = diagnostics.Any() == false || change.Order == -1;
+                Scripts.Add(change);     
+
+
                 var logo = change.IsValid.Value ? ":green_circle:" : ":red_circle:";
                 var addActionText = before == null ? "Add" : "To";
                 sb.AppendLine($"<tr></tr>");
