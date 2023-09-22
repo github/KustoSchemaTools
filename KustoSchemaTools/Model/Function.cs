@@ -1,4 +1,5 @@
 ﻿using KustoSchemaTools.Changes;
+using KustoSchemaTools.Parser;
 using YamlDotNet.Serialization;
 
 namespace KustoSchemaTools.Model
@@ -20,7 +21,12 @@ namespace KustoSchemaTools.Model
                 .Where(p => p.GetValue(this) != null && p.Name != "Body" && p.Name != "Parameters")
                 .Select(p => $"{p.Name}=\"{p.GetValue(this)}\"");
             var propertiesString = string.Join(", ", properties);
-            return new List<DatabaseScriptContainer> { new DatabaseScriptContainer("CreateOrAlterFunction", 40, $".create-or-alter function with({propertiesString}) {name} ({Parameters}) {{ {Body} }}") };
+
+            var parameters = string.IsNullOrEmpty(Parameters) 
+                ? Parameters 
+                : string.Join(',', Parameters.Split(',').Select(p => p.Split(':')).Select(itm => $"{itm[0].Trim().BracketIfIdentifier()}:{itm[1]}"));
+
+            return new List<DatabaseScriptContainer> { new DatabaseScriptContainer("CreateOrAlterFunction", 40, $".create-or-alter function with({propertiesString}) {name} ({parameters}) {{ {Body} }}") };
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using KustoSchemaTools.Changes;
 using KustoSchemaTools.Helpers;
+using KustoSchemaTools.Parser;
 using Newtonsoft.Json;
 
 namespace KustoSchemaTools.Model
@@ -25,7 +26,7 @@ namespace KustoSchemaTools.Model
                     .Where(p => p.GetValue(this) != null && (p.Name == "Folder" || p.Name == "DocString"))
                     .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
 
-                scripts.Add(new DatabaseScriptContainer("CreateMergeTable", 30, $".create-merge table {name} ({string.Join(", ", Columns.Select(c => $"{c.Key}:{c.Value}"))})"));
+                scripts.Add(new DatabaseScriptContainer("CreateMergeTable", 30, $".create-merge table {name} ({string.Join(", ", Columns.Select(c => $"{c.Key.BracketIfIdentifier()}:{c.Value}"))})"));
             }
             else
             {
