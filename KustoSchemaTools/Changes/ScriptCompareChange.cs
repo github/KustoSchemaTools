@@ -6,6 +6,7 @@ using KustoSchemaTools.Parser;
 using System.Text;
 using System.Data;
 using DiffPlex.DiffBuilder.Model;
+using Kusto.Language.Editor;
 
 namespace KustoSchemaTools.Changes
 {
@@ -35,6 +36,19 @@ namespace KustoSchemaTools.Changes
                 var before = from.ContainsKey(change.Kind) ? from[change.Kind] : null;
                 var beforeText = before?.Text ?? "";
                 var afterText = change.Text;
+
+                var singleLinebeforeText = new KustoCodeService(KustoCode.Parse(beforeText)).GetMinimalText(MinimalTextKind.SingleLine);
+                var singleLineafterText = new KustoCodeService(KustoCode.Parse(afterText)).GetMinimalText(MinimalTextKind.SingleLine);
+
+                var reducedBefore = KustoCode.Parse(singleLinebeforeText);
+                var reducedAfter = KustoCode.Parse(singleLineafterText);
+
+                var zipped = reducedBefore.GetLexicalTokens().Zip(reducedAfter.GetLexicalTokens()).ToList();
+                var diffs = zipped.Where(itm => itm.First.Text != itm.Second.Text).ToList();
+                if(diffs.Any() == false) continue;
+
+                if (singleLinebeforeText.Equals(singleLineafterText)) continue;
+
                 var differ = new Differ();
                 var diff = InlineDiffBuilder.Diff(beforeText, afterText, true);
                 if (diff.Lines.All(itm => itm.Type == ChangeType.Unchanged)) continue;
@@ -55,13 +69,41 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine($"</tr>");
                 if (before != null)
                 {
-                    sb.AppendLine("<tr>");
-                    sb.AppendLine($"    <td colspan=\"2\">From:</td>");
-                    sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{before.Text.PrettifyKql()}</pre></td>");
-                    sb.AppendLine("</tr>");
+                    foreach(var c in new [] { new { Change = ChangeType.Deleted, Prefix = "-" }, new { Change = ChangeType.Inserted, Prefix = "+" } })
+                    {
+                        var changeType = c.Change;
+                        if (diff.Lines.Any(itm => itm.Type == changeType))
+                        {
+                            sb.AppendLine("<tr>");
+                            sb.AppendLine($"    <td colspan=\"2\">{c.Change}:</td>");
+                            sb.AppendLine($"    <td colspan=\"10\"> \n\n```diff ");
+                            
+                            var relevantLines = diff.Lines.Where(itm => itm.Type == ChangeType.Unchanged || itm.Type == changeType).OrderBy(itm => itm.Position).ToList();
+                            int last = 0;
+                            for (int i = 0; i < relevantLines.Count; i++)
+                            {
+                                var b = i - 1 > 0 ? relevantLines[i - 1] : null;
+                                var current = relevantLines[i];
+                                var n = i + 1 < relevantLines.Count ? relevantLines[i + 1] : null;
+
+                                if (current.Type == changeType || b?.Type == changeType  || n?.Type == changeType)
+                                {
+                                    if(i-last > 1)
+                                    {
+                                        sb.AppendLine();
+                                    }
+
+                                    var p = current.Type == changeType ? c.Prefix : " ";
+                                    sb.AppendLine($"{p}{i}:\t{current.Text}");
+                                    last = i;
+                                }
+                            }
+                            sb.AppendLine("```\n\n</td></tr>");
+                        }
+                    }
                 }
                 sb.AppendLine("<tr>");
-                sb.AppendLine($"    <td colspan=\"2\">{addActionText}:</td>");
+                sb.AppendLine($"    <td colspan=\"2\">Script:</td>");
                 sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Text.PrettifyKql()}</pre></td>");
                 sb.AppendLine("</tr>");
 
