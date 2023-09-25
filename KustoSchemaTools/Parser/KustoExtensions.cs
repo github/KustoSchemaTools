@@ -19,7 +19,11 @@ namespace KustoSchemaTools.Parser
 
         public static string BracketIfIdentifier(this string name)
         {
-            return reservedKustoWords.Contains(name) ? $"['{name}']" : name;
+            return reservedKustoWords.Contains(name) 
+                ? $"['{name}']" 
+                : name.StartsWith("[") 
+                    ? name
+                    : KustoFacts.BracketNameIfNecessary(name);
         }
 
 
