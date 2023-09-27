@@ -11,7 +11,7 @@ namespace KustoSchemaTools.Model
         public string Folder { get; set; } = "";
         public string DocString { get; set; } = "";
         public string? EffectiveDateTime { get; set; }
-        public string Lookback { get; set; } = "1d";
+        public string Lookback { get; set; }
         public bool Backfill { get; set; } = false;
         public bool? UpdateExtentsCreationTime { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;

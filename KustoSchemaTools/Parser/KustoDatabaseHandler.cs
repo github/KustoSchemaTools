@@ -63,6 +63,7 @@ namespace KustoSchemaTools.Parser
                 .SelectMany(itm => itm.Scripts)
                 .Where(itm => itm.Order >= 0)
                 .Where(itm => itm.IsValid == true)
+               .OrderBy(itm => itm.Order)
                 .ToList();
 
             var client = new KustoClient(ClusterUrl);
