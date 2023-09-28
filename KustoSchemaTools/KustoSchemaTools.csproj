@@ -15,7 +15,7 @@
     <PackageReference Include="Microsoft.Azure.Kusto.Data" Version="11.3.3" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.3.2" />
     <PackageReference Include="Microsoft.Azure.Kusto.Language" Version="11.3.24011" />
-    <PackageReference Include="Microsoft.Azure.Kusto.Tools" Version="11.3.2" />
+    <PackageReference Include="Microsoft.Azure.Kusto.Tools" Version="11.3.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="YamlDotNet" Version="13.4.0" />
