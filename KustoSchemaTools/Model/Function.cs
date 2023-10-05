@@ -1,5 +1,8 @@
-﻿using KustoSchemaTools.Changes;
+﻿using Kusto.Language.Syntax;
+using Kusto.Language;
+using KustoSchemaTools.Changes;
 using KustoSchemaTools.Parser;
+using System.Text;
 using YamlDotNet.Serialization;
 
 namespace KustoSchemaTools.Model
@@ -22,9 +25,31 @@ namespace KustoSchemaTools.Model
                 .Select(p => $"{p.Name}=\"{p.GetValue(this)}\"");
             var propertiesString = string.Join(", ", properties);
 
-            var parameters = string.IsNullOrEmpty(Parameters) 
-                ? Parameters 
-                : string.Join(',', Parameters.Split(',').Select(p => p.Split(':')).Select(itm => $"{itm[0].Trim().BracketIfIdentifier()}:{itm[1]}"));
+            var parameters = Parameters;
+            if (!string.IsNullOrWhiteSpace(Parameters))
+            {
+                var dummyFunction = $"let x = ({parameters}) {{print \"abc\"}}";
+                var parsed = KustoCode.Parse(dummyFunction);
+
+                var descs = parsed.Syntax
+                    .GetDescendants<FunctionParameters>()
+                    .First()
+                    .GetDescendants<NameDeclaration>()
+                    .ToList();
+
+                var sb = new StringBuilder();
+                int lastPos = 0;
+                foreach (var desc in descs)
+                {
+                    var bracketified = desc.Name.ToString().Trim().BracketIfIdentifier();
+                    sb.Append(dummyFunction[lastPos..desc.TextStart]);
+                    sb.Append(bracketified);
+                    lastPos = desc.End;
+                }
+                sb.Append(dummyFunction.Substring(lastPos));
+                var replacedFunction = sb.ToString();
+                parameters = replacedFunction[9..^15];
+            }
 
             return new List<DatabaseScriptContainer> { new DatabaseScriptContainer("CreateOrAlterFunction", 40, $".create-or-alter function with({propertiesString}) {name} ({parameters}) {{ {Body} }}") };
         }
