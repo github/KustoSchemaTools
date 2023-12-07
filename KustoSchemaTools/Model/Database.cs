@@ -22,6 +22,8 @@
 
         public List<DatabaseScript> Scripts { get; set; } = new List<DatabaseScript>();
 
+        public Dictionary<string, List<Entity>> EntityGroups { get; set; } = new Dictionary<string, List<Entity>>();
+
     }
 
 }
