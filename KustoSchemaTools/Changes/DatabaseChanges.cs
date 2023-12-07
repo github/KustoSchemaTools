@@ -1,4 +1,5 @@
-﻿using KustoSchemaTools.Model;
+﻿using Kusto.Language;
+using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Changes
@@ -66,7 +67,7 @@ namespace KustoSchemaTools.Changes
                         log.LogInformation($"Table {table.Key} exists, created {change.Scripts.Count} script to apply the diffs");
                         tmp.Add(change);
                     }
-                    else
+                    else if (table.Value.Columns?.Count > 0)
                     {
                         var change = new ScriptCompareChange(table.Key, null, table.Value);
                         log.LogInformation($"Table {table.Key} doesn't exist, created {change.Scripts.Count} scripts to create the table");
@@ -142,6 +143,28 @@ namespace KustoSchemaTools.Changes
                     result.AddRange(changes);
                 }
             }            
+
+            if(newState.EntityGroups.Any())
+            {
+                var changes = new List<IChange>();
+                var existingEntityGroups = oldState?.EntityGroups ?? new Dictionary<string, List<Entity>>();
+                foreach (var group in newState.EntityGroups)
+                {
+                    var existing = existingEntityGroups.ContainsKey(group.Key) ? existingEntityGroups[group.Key] : null;
+                    var change = new EntityGroupChange(name, group.Key, existing, group.Value);
+                    if(change.Scripts.Any())
+                    {
+                        changes.Add(change);
+                    }
+                }
+                if (changes.Any())
+                {
+                    log.LogInformation($"Detected changes for Entity Groups: {changes.Count}");
+                    result.Add(new Heading("Entity Groups"));
+                    result.AddRange(changes);
+                }
+            }
+
 
             return result;
         }

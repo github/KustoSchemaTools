@@ -10,8 +10,6 @@ using Kusto.Language.Editor;
 
 namespace KustoSchemaTools.Changes
 {
-
-
     public class ScriptCompareChange : BaseChange<IKustoBaseEntity>
     {
         public ScriptCompareChange(string entity, IKustoBaseEntity? from, IKustoBaseEntity to) : base(to.GetType().Name, entity, from, to)
