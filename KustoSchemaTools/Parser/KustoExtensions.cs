@@ -47,7 +47,7 @@ namespace KustoSchemaTools.Parser
             {
                 return (T)reader.GetValue(0);
             }
-            throw new InvalidOperationException("Can't get the value from the resultset, because it is empty.");
+            return default(T);
         }
 
         public static List<T> As<T>(this DataTable table)
