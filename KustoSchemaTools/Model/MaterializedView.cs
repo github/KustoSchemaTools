@@ -20,17 +20,30 @@ namespace KustoSchemaTools.Model
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
         [YamlMember(ScalarStyle = ScalarStyle.Literal)]
         public string Query { get; set; }
+        public string? RowLevelSecurity { get; set; }
 
         public List<DatabaseScriptContainer> CreateScripts(string name)
         {
+            var excludedProperies = new HashSet<string>( new[] { "Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity" });
+
             var scripts = new List<DatabaseScriptContainer>();
             var properties = string.Join(", ", GetType().GetProperties()
-                .Where(p => p.GetValue(this) != null && p.Name != "Query" && p.Name != "Source" && p.Name != "Kind" && p.Name != "RetentionAndCachePolicy")
+                .Where(p => p.GetValue(this) != null && excludedProperies.Contains(p.Name) == false)
                 .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
             scripts.Add(new DatabaseScriptContainer("CreateOrAlterMaterializedView", 40, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
 
             if (RetentionAndCachePolicy != null)
                 scripts.AddRange(RetentionAndCachePolicy.CreateScripts(name, "materialized-view"));
+
+
+            if (!string.IsNullOrEmpty(RowLevelSecurity))
+            {
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable \"{RowLevelSecurity}\""));
+            }
+            else
+            {
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".delete table {name} policy row_level_security"));
+            }
             return scripts;
         }
     }
