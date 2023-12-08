@@ -16,6 +16,7 @@ namespace KustoSchemaTools.Model
         public bool? UpdateExtentsCreationTime { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;
         public List<string> DimensionTables { get; set; }
+        public bool AllowMaterializedViewsWithoutRowLevelSecurity { get; set; } = false;
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
         [YamlMember(ScalarStyle = ScalarStyle.Literal)]
         public string Query { get; set; }
@@ -24,7 +25,7 @@ namespace KustoSchemaTools.Model
         {
             var scripts = new List<DatabaseScriptContainer>();
             var properties = string.Join(", ", GetType().GetProperties()
-                .Where(p => p.GetValue(this) != null && p.Name != "Query" && p.Name != "Source" && p.Name != "Kind")
+                .Where(p => p.GetValue(this) != null && p.Name != "Query" && p.Name != "Source" && p.Name != "Kind" && p.Name != "RetentionAndCachePolicy")
                 .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
             scripts.Add(new DatabaseScriptContainer("CreateOrAlterMaterializedView", 40, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
 
