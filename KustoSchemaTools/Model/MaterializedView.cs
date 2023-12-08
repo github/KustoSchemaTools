@@ -38,11 +38,11 @@ namespace KustoSchemaTools.Model
 
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable \"{RowLevelSecurity}\""));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter materialized-view {name} policy row_level_security enable \"{RowLevelSecurity}\""));
             }
             else
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".delete table {name} policy row_level_security"));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".delete materialized-view {name} policy row_level_security"));
             }
             return scripts;
         }
