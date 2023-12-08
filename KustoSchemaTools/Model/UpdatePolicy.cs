@@ -15,7 +15,7 @@ namespace KustoSchemaTools.Model
         [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public string Query { get; set; }
         public bool IsTransactional { get; set; } = false;
-
+        public string ManagedIdentity { get; set; }
 
 
         public string CreateScript(string name)
