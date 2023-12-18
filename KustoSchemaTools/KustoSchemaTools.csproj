@@ -11,7 +11,7 @@
   <ItemGroup>
 	<PackageReference Include="DiffPlex" Version="1.7.1" />
     <PackageReference Include="Kusto.Toolkit" Version="1.7.5" />
-    <PackageReference Include="Markdig" Version="0.33.0" />
+    <PackageReference Include="Markdig" Version="0.34.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Data" Version="11.3.4" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.3.4" />
     <PackageReference Include="Microsoft.Azure.Kusto.Language" Version="11.3.24011" />
