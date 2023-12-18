@@ -24,6 +24,8 @@
 
         public Dictionary<string, List<Entity>> EntityGroups { get; set; } = new Dictionary<string, List<Entity>>();
 
+        public List<Metadata> Metadata { get; set; } = new List<Metadata> { };
+
     }
 
 }
