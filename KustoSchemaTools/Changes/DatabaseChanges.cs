@@ -1,4 +1,5 @@
-﻿using KustoSchemaTools.Model;
+﻿using Kusto.Language;
+using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Changes
@@ -66,7 +67,7 @@ namespace KustoSchemaTools.Changes
                         log.LogInformation($"Table {table.Key} exists, created {change.Scripts.Count} script to apply the diffs");
                         tmp.Add(change);
                     }
-                    else
+                    else if (table.Value.Columns?.Count > 0)
                     {
                         var change = new ScriptCompareChange(table.Key, null, table.Value);
                         log.LogInformation($"Table {table.Key} doesn't exist, created {change.Scripts.Count} scripts to create the table");
@@ -142,6 +143,60 @@ namespace KustoSchemaTools.Changes
                     result.AddRange(changes);
                 }
             }            
+
+            if(newState.EntityGroups.Any())
+            {
+                var changes = new List<IChange>();
+                var existingEntityGroups = oldState?.EntityGroups ?? new Dictionary<string, List<Entity>>();
+                foreach (var group in newState.EntityGroups)
+                {
+                    var existing = existingEntityGroups.ContainsKey(group.Key) ? existingEntityGroups[group.Key] : null;
+                    var change = new EntityGroupChange(name, group.Key, existing, group.Value);
+                    if(change.Scripts.Any())
+                    {
+                        changes.Add(change);
+                    }
+                }
+                if (changes.Any())
+                {
+                    log.LogInformation($"Detected changes for Entity Groups: {changes.Count}");
+                    result.Add(new Heading("Entity Groups"));
+                    result.AddRange(changes);
+                }
+            }
+
+            if (newState.ExternalTables.Any())
+            {
+                var tmp = new List<IChange>();
+                var existingExternalTable = oldState?.ExternalTables ?? new Dictionary<string, ExternalTable>();
+                log.LogInformation($"Existing functions: {string.Join(", ", existingExternalTable.Keys)}");
+
+                foreach (var extTable in newState.ExternalTables)
+                {
+                    if (existingExternalTable.ContainsKey(extTable.Key))
+                    {
+                        var existingFunction = existingExternalTable[extTable.Key];
+                        var change = new ScriptCompareChange(extTable.Key, existingFunction, extTable.Value);
+                        log.LogInformation($"Function {extTable.Key} exists, created {change.Scripts.Count} script to apply the diffs");
+                        tmp.Add(change);
+                    }
+                    else
+                    {
+                        var change = new ScriptCompareChange(extTable.Key, null, extTable.Value);
+                        log.LogInformation($"Function {extTable.Key} doesn't exist, created {change.Scripts.Count} scripts to create the function");
+                        tmp.Add(change);
+                    }
+                }
+                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
+                if (changes.Any())
+                {
+                    log.LogInformation($"Detected changes for Functions: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
+                    result.Add(new Heading("Functions"));
+                    result.AddRange(changes);
+                }
+
+            }
+
 
             return result;
         }
