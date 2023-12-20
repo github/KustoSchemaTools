@@ -24,7 +24,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
 
             var state = JsonConvert.SerializeObject(sourceDb.Metadata, Serialization.JsonPascalCase);
 
-            var cmd = $".set-or-append {Table} with (folder='{Folder}') <| print Timestamp = now(), Metadata = todynamic('''{state}''')| mv-expand Metadata | evaluate bag_unpack(Metadata)";
+            var cmd = $".set-or-append {Table} with (folder='{Folder}') <| print Timestamp = now(), Metadata = todynamic(```{state}```)| mv-expand Metadata | evaluate bag_unpack(Metadata)";
 
             await client.AdminClient.ExecuteControlCommandAsync(targetDb.Name, cmd, new ClientRequestProperties());
         }
