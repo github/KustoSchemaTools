@@ -24,7 +24,7 @@ namespace KustoSchemaTools.Model
 
         // In the with()-block
         public string? FileExtensions { get; set; }
-        public bool IncludeHeaders { get; set; }
+        public string IncludeHeaders { get; set; }
         public bool Compressed { get; set; }
 
         #endregion
@@ -84,17 +84,17 @@ namespace KustoSchemaTools.Model
             }
             if (string.IsNullOrWhiteSpace(PathFormat) == false)
             {
-                sb.AppendLine($"pathformat=({Partitions})");
+                sb.AppendLine($"pathformat=({PathFormat})");
             }
             sb.AppendLine($"dataformat={DataFormat}");
-            sb.AppendLine($"(h@'{ConnectionString}'");
+            sb.AppendLine($"(h@'{ConnectionString}')");
 
             var ext = string.IsNullOrWhiteSpace(FileExtensions) ? "" : FileExtensions.StartsWith(".") ? FileExtensions : "." + FileExtensions;
-            
+
             sb.Append($"with(folder='{Folder}', docString='{DocString}', fileExtension='{ext}', compressed={Compressed} ");
-            if (IncludeHeaders)
+            if (string.IsNullOrEmpty(IncludeHeaders)==false)
             {
-                sb.AppendLine(", includeHeaders=true");
+                sb.AppendLine($", includeHeaders='{IncludeHeaders}'");
             }
             if (string.IsNullOrWhiteSpace(Encoding) == false)
             {

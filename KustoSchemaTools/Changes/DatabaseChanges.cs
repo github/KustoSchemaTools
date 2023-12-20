@@ -165,6 +165,38 @@ namespace KustoSchemaTools.Changes
                 }
             }
 
+            if (newState.ExternalTables.Any())
+            {
+                var tmp = new List<IChange>();
+                var existingExternalTable = oldState?.ExternalTables ?? new Dictionary<string, ExternalTable>();
+                log.LogInformation($"Existing functions: {string.Join(", ", existingExternalTable.Keys)}");
+
+                foreach (var extTable in newState.ExternalTables)
+                {
+                    if (existingExternalTable.ContainsKey(extTable.Key))
+                    {
+                        var existingFunction = existingExternalTable[extTable.Key];
+                        var change = new ScriptCompareChange(extTable.Key, existingFunction, extTable.Value);
+                        log.LogInformation($"Function {extTable.Key} exists, created {change.Scripts.Count} script to apply the diffs");
+                        tmp.Add(change);
+                    }
+                    else
+                    {
+                        var change = new ScriptCompareChange(extTable.Key, null, extTable.Value);
+                        log.LogInformation($"Function {extTable.Key} doesn't exist, created {change.Scripts.Count} scripts to create the function");
+                        tmp.Add(change);
+                    }
+                }
+                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
+                if (changes.Any())
+                {
+                    log.LogInformation($"Detected changes for Functions: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
+                    result.Add(new Heading("Functions"));
+                    result.AddRange(changes);
+                }
+
+            }
+
 
             return result;
         }
