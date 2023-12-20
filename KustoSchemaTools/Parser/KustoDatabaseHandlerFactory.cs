@@ -10,17 +10,29 @@ namespace KustoSchemaTools.Parser
             Logger = logger;
         }
 
-        public List<IKustoBulkEntitiesLoader> Plugins { get; } = new ();
+        public List<IKustoBulkEntitiesLoader> Reader { get; } = new ();
+        public List<IDBEntityWriter> Writer { get; } = new ();
 
         public KustoDatabaseHandlerFactory WithPlugin(IKustoBulkEntitiesLoader plugin)
         {
-            Plugins.Add(plugin);
+            Reader.Add(plugin);
             return this;
         }
 
-        public KustoDatabaseHandlerFactory WithPlugin<T>() where T : IKustoBulkEntitiesLoader, new()
+        public KustoDatabaseHandlerFactory WithReader<T>() where T : IKustoBulkEntitiesLoader, new()
         {
-            Plugins.Add(new T());
+            Reader.Add(new T());
+            return this;
+        }
+        public KustoDatabaseHandlerFactory WithPlugin(IDBEntityWriter plugin)
+        {
+            Writer.Add(plugin);
+            return this;
+        }
+
+        public KustoDatabaseHandlerFactory WithWriter<T>() where T : IDBEntityWriter, new()
+        {
+            Writer.Add(new T());
             return this;
         }
 
@@ -28,7 +40,7 @@ namespace KustoSchemaTools.Parser
 
         public IDatabaseHandler Create(string cluster, string database)
         {
-            return new KustoDatabaseHandler(cluster, database, Logger, Plugins);
+            return new KustoDatabaseHandler(cluster, database, Logger, Reader, Writer);
         }
 
     }
