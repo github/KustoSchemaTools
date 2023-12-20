@@ -24,7 +24,7 @@ namespace KustoSchemaTools.Parser
             var dbFileName = Path.Combine(folder, "database.yml");
             var dbYaml = File.ReadAllText(dbFileName);
             var db = Serialization.YamlPascalCaseDeserializer.Deserialize<Database>(dbYaml);
-
+            db.Name = Database;
             foreach (var plugin in Plugins)
             {
                 await plugin.OnLoad(db, Path.Combine(Deployment, Database));

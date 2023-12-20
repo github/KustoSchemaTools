@@ -10,26 +10,29 @@ namespace KustoSchemaTools.Parser
 {
     public class KustoDatabaseHandler : IDatabaseHandler
     {
-        public KustoDatabaseHandler(string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler> logger, List<IKustoBulkEntitiesLoader> plugins)
+        public KustoDatabaseHandler(string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler> logger, List<IKustoBulkEntitiesLoader> reader, List<IDBEntityWriter> writer)
         {
             ClusterUrl = clusterUrl;
             DatabaseName = databaseName;
             Logger = logger;
-            Plugins = plugins;
+            Reader = reader;
+            Writer = writer;
+            Client = new KustoClient(ClusterUrl);
         }
 
         public string ClusterUrl { get; }
         public string DatabaseName { get; }
         public ILogger<KustoDatabaseHandler> Logger { get; }
-        public List<IKustoBulkEntitiesLoader> Plugins { get; }
+        public List<IKustoBulkEntitiesLoader> Reader { get; }
+        public List<IDBEntityWriter> Writer { get; }
+        public KustoClient Client { get; }
 
         public async Task<Database> LoadAsync()
         {
-            var client = new KustoClient(ClusterUrl);
             var database = new Database{ Name = DatabaseName };
-            foreach (var plugin in Plugins)
+            foreach (var plugin in Reader)
             {
-                await plugin.Load(database, DatabaseName, client);
+                await plugin.Load(database, DatabaseName, Client);
 
             }
             return database;
@@ -37,49 +40,13 @@ namespace KustoSchemaTools.Parser
         public async Task WriteAsync(Database database)
         {
             var targetDb = await LoadAsync();
-            var changes = DatabaseChanges.GenerateChanges(targetDb, database, targetDb.Name, Logger);
-            var results = await ApplyChangesToDatabase(changes);
 
-            foreach (var result in results)
+            foreach (var plugin in Writer)
             {
-                Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
-                Console.WriteLine("---------------------------------------------------------------------------");
-            }
-            var exs = results.Where(itm => itm.Result == "Failed").Select(itm => new Exception($"Execution failed for command \n{itm.CommandText} \n with reason\n{itm.Reason}")).ToList();
-            if (exs.Count == 1)
-            {
-                throw exs[0];
-            }
-            if (exs.Count > 1)
-            {
-                throw new AggregateException(exs);
+                await plugin.WriteAsync(database, targetDb, Client, Logger);
             }
         }
-
-
-        private async Task<List<ScriptExecuteCommandResult>> ApplyChangesToDatabase(List<IChange> changes)
-        {
-            var scripts = changes
-                .SelectMany(itm => itm.Scripts)
-                .Where(itm => itm.Order >= 0)
-                .Where(itm => itm.IsValid == true)
-               .OrderBy(itm => itm.Order)
-                .ToList();
-
-            var client = new KustoClient(ClusterUrl);
-
-            var sb = new StringBuilder();
-            sb.AppendLine(".execute script with(ContinueOnErrors = true) <|");
-            foreach (var sc in scripts)
-            {
-                sb.AppendLine(sc.Text);
-            }
-
-            var script = sb.ToString();
-            Logger.LogInformation($"Applying sript:\n{script}");
-            var result = await client.AdminClient.ExecuteControlCommandAsync(DatabaseName, script);
-            return result.As<ScriptExecuteCommandResult>();
-        }
+        
     }
 
 
