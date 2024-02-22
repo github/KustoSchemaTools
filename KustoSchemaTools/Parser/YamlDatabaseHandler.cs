@@ -17,8 +17,8 @@ namespace KustoSchemaTools.Parser
         public string Deployment { get; }
         public string Database { get; }
 
-        private List<IYamlSchemaPlugin> Plugins { get; }
-        public async Task<Database> LoadAsync()
+        protected List<IYamlSchemaPlugin> Plugins { get; }
+        public virtual async Task<Database> LoadAsync()
         {
             var folder = Path.Combine(Deployment, Database);
             var dbFileName = Path.Combine(folder, "database.yml");
@@ -32,7 +32,7 @@ namespace KustoSchemaTools.Parser
             return db;
         }
 
-        public async Task WriteAsync(Database database)
+        public virtual async Task WriteAsync(Database database)
         {
             var clone = database.Clone();
             var path = Path.Combine(Deployment, Database);
