@@ -3,7 +3,7 @@ using KustoSchemaTools.Model;
 
 namespace KustoSchemaTools.Plugins
 {
-    public abstract class EntityPlugin<T>: IYamlSchemaPlugin<Database> where T : new()
+    public abstract class EntityPlugin<T>: YamlSchemaPlugin where T : new()
     {
         public EntityPlugin(Func<Database, Dictionary<string, T>> selector, string subFolder, int minFileLength)
         {
@@ -16,7 +16,7 @@ namespace KustoSchemaTools.Plugins
         public string SubFolder { get; }
         public int MinFileLength { get; }
 
-        public async Task OnLoad(Database existingDatabase, string basePath)
+        public async override Task OnLoad(Database existingDatabase, string basePath)
         {
             var dict = Selector(existingDatabase);
             var path = Path.Combine(basePath, SubFolder);
@@ -40,7 +40,7 @@ namespace KustoSchemaTools.Plugins
             }
         }
 
-        public async Task OnWrite(Database existingDatabase, string path)
+        public async override Task OnWrite(Database existingDatabase, string path)
         {
             var dict = Selector(existingDatabase);
 
