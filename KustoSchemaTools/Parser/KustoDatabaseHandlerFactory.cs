@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Parser
 {
-    public class KustoDatabaseHandlerFactory
+    public class KustoDatabaseHandlerFactory<T> where T : Database, new()
     {
-        public KustoDatabaseHandlerFactory(ILogger<KustoDatabaseHandler> logger)
+        public KustoDatabaseHandlerFactory(ILogger<KustoDatabaseHandler<T>> logger)
         {
             Logger = logger;
         }
@@ -14,37 +14,34 @@ namespace KustoSchemaTools.Parser
         public List<IKustoBulkEntitiesLoader> Reader { get; } = new ();
         public List<IDBEntityWriter> Writer { get; } = new ();
 
-        public KustoDatabaseHandlerFactory WithPlugin(IKustoBulkEntitiesLoader plugin)
+        public KustoDatabaseHandlerFactory<T> WithPlugin(IKustoBulkEntitiesLoader plugin)
         {
             Reader.Add(plugin);
             return this;
         }
 
-        public KustoDatabaseHandlerFactory WithReader<T>() where T : IKustoBulkEntitiesLoader, new()
+        public KustoDatabaseHandlerFactory<T> WithReader<U>() where U : IKustoBulkEntitiesLoader, new()
         {
-            Reader.Add(new T());
+            Reader.Add(new U());
             return this;
         }
-        public KustoDatabaseHandlerFactory WithPlugin(IDBEntityWriter plugin)
+        public KustoDatabaseHandlerFactory<T> WithPlugin(IDBEntityWriter plugin)
         {
             Writer.Add(plugin);
             return this;
         }
 
-        public KustoDatabaseHandlerFactory WithWriter<T>() where T : IDBEntityWriter, new()
+        public KustoDatabaseHandlerFactory<T> WithWriter<U>() where U : IDBEntityWriter, new()
         {
-            Writer.Add(new T());
+            Writer.Add(new U());
             return this;
         }
 
-        public ILogger<KustoDatabaseHandler> Logger { get; set; }
+        public ILogger<KustoDatabaseHandler<T>> Logger { get; set; }
 
-        public IDatabaseHandler<Database> Create(string cluster, string database)
+        public IDatabaseHandler<T> Create(string cluster, string database)
         {
-            return new KustoDatabaseHandler(cluster, database, Logger, Reader, Writer);
+            return new KustoDatabaseHandler<T>(cluster, database, Logger, Reader, Writer);
         }
-
     }
-
-    
 }
