@@ -3,7 +3,7 @@ using KustoSchemaTools.Plugins;
 
 namespace KustoSchemaTools.Parser
 {
-    public class DatabaseCleanup : IKustoBulkEntitiesLoader, IYamlSchemaPlugin
+    public class DatabaseCleanup : YamlSchemaPlugin, IKustoBulkEntitiesLoader
     {
         public Task Load(Database database, string databaseName, KustoClient client)
         {
@@ -11,13 +11,13 @@ namespace KustoSchemaTools.Parser
             return Task.CompletedTask;
         }
 
-        public Task OnWrite(Database existingDatabase, string basePath)
+        public override Task OnWrite(Database existingDatabase, string basePath)
         {
             return Task.CompletedTask;
         }
 
 
-        public Task OnLoad(Database existingDatabase, string basePath)
+        public override Task OnLoad(Database existingDatabase, string basePath)
         {
             CleanUp(existingDatabase);
             return Task.CompletedTask;

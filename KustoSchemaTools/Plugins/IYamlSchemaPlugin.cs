@@ -2,9 +2,9 @@
 
 namespace KustoSchemaTools.Plugins
 {
-    public interface IYamlSchemaPlugin
+    public interface IYamlSchemaPlugin<in T> where T : Database
     {
-        Task OnLoad(Database existingDatabase, string basePath);
-        Task OnWrite(Database existingDatabase, string basePath);
+        Task OnLoad(T existingDatabase, string basePath);
+        Task OnWrite(T existingDatabase, string basePath);
     }
 }

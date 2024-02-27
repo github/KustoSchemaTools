@@ -1,16 +1,12 @@
-﻿using Kusto.Data;
-using KustoSchemaTools.Changes;
-using KustoSchemaTools.Model;
+﻿using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 using Microsoft.Extensions.Logging;
-using System.Data;
-using System.Text;
 
 namespace KustoSchemaTools.Parser
 {
-    public class KustoDatabaseHandler : IDatabaseHandler
+    public class KustoDatabaseHandler<T> : IDatabaseHandler<T> where T: Database, new()
     {
-        public KustoDatabaseHandler(string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler> logger, List<IKustoBulkEntitiesLoader> reader, List<IDBEntityWriter> writer)
+        public KustoDatabaseHandler(string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler<T>> logger, List<IKustoBulkEntitiesLoader> reader, List<IDBEntityWriter> writer)
         {
             ClusterUrl = clusterUrl;
             DatabaseName = databaseName;
@@ -22,14 +18,14 @@ namespace KustoSchemaTools.Parser
 
         public string ClusterUrl { get; }
         public string DatabaseName { get; }
-        public ILogger<KustoDatabaseHandler> Logger { get; }
+        public ILogger<KustoDatabaseHandler<T>> Logger { get; }
         public List<IKustoBulkEntitiesLoader> Reader { get; }
         public List<IDBEntityWriter> Writer { get; }
         public KustoClient Client { get; }
 
-        public async Task<Database> LoadAsync()
+        public async Task<T> LoadAsync()
         {
-            var database = new Database{ Name = DatabaseName };
+            var database = new T { Name = DatabaseName };
             foreach (var plugin in Reader)
             {
                 await plugin.Load(database, DatabaseName, Client);
@@ -37,7 +33,7 @@ namespace KustoSchemaTools.Parser
             }
             return database;
         }
-        public async Task WriteAsync(Database database)
+        public async Task WriteAsync(T database)
         {
             var targetDb = await LoadAsync();
 
@@ -49,5 +45,10 @@ namespace KustoSchemaTools.Parser
         
     }
 
-
+    public class KustoDatabaseHandler : KustoDatabaseHandler<Database>
+    {
+        public KustoDatabaseHandler(string clusterUrl, string databaseName, ILogger<KustoDatabaseHandler> logger, List<IKustoBulkEntitiesLoader> reader, List<IDBEntityWriter> writer) : base(clusterUrl, databaseName, logger, reader, writer)
+        {
+        }
+    }
 }

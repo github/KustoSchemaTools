@@ -1,26 +1,30 @@
-﻿using KustoSchemaTools.Plugins;
+﻿using KustoSchemaTools.Model;
+using KustoSchemaTools.Plugins;
 
 namespace KustoSchemaTools.Parser
 {
-    public class YamlDatabaseHandlerFactory
+    public class YamlDatabaseHandlerFactory<T> where T : Database, new()
     {
-        
-        public List<IYamlSchemaPlugin> Plugins { get; } = new List<IYamlSchemaPlugin> ();
+        public List<IYamlSchemaPlugin<T>> Plugins { get; } = new List<IYamlSchemaPlugin<T>> ();
 
-        public YamlDatabaseHandlerFactory WithPlugin(IYamlSchemaPlugin plugin)
+        public virtual YamlDatabaseHandlerFactory<T> WithPlugin(IYamlSchemaPlugin<T> plugin)
         {
             Plugins.Add(plugin);
             return this;
         }
-        public YamlDatabaseHandlerFactory WithPlugin<T>() where T: IYamlSchemaPlugin, new()
+        public virtual YamlDatabaseHandlerFactory<T> WithPlugin<TPlugin>() where TPlugin : IYamlSchemaPlugin<T>, new()
         {
-            Plugins.Add(new T());
+            Plugins.Add(new TPlugin());
             return this;
         }
 
-        public IDatabaseHandler Create(string deployment, string database)
+        public virtual IDatabaseHandler<T> Create(string deployment, string database) 
         {
-            return new YamlDatabaseHandler(deployment, database, Plugins);
+            return new YamlDatabaseHandler<T>(deployment, database, Plugins);
         }
+    }
+
+    public class YamlDatabaseHandlerFactory : YamlDatabaseHandlerFactory<Database>
+    {
     }
 }
