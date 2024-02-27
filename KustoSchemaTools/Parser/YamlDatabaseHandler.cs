@@ -7,7 +7,7 @@ namespace KustoSchemaTools.Parser
     public class YamlDatabaseHandler<T> : IDatabaseHandler<T> where T : Database, new()
     {
 
-        public YamlDatabaseHandler(string deployment, string database, List<IYamlSchemaPlugin> plugins)
+        public YamlDatabaseHandler(string deployment, string database, List<IYamlSchemaPlugin<T>> plugins)
         {
             Deployment = deployment;
             Database = database;
@@ -17,7 +17,7 @@ namespace KustoSchemaTools.Parser
         public string Deployment { get; }
         public string Database { get; }
 
-        protected List<IYamlSchemaPlugin> Plugins { get; }
+        protected List<IYamlSchemaPlugin<T>> Plugins { get; }
         public virtual async Task<T> LoadAsync()
         {
             var folder = Path.Combine(Deployment, Database);

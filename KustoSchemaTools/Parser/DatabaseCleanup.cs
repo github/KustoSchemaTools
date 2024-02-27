@@ -3,7 +3,7 @@ using KustoSchemaTools.Plugins;
 
 namespace KustoSchemaTools.Parser
 {
-    public class DatabaseCleanup : IKustoBulkEntitiesLoader, IYamlSchemaPlugin
+    public class DatabaseCleanup : IKustoBulkEntitiesLoader, IYamlSchemaPlugin<Database>
     {
         public Task Load(Database database, string databaseName, KustoClient client)
         {

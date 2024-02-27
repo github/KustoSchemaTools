@@ -3,7 +3,7 @@ using KustoSchemaTools.Model;
 
 namespace KustoSchemaTools.Plugins
 {
-    public abstract class EntityPlugin<T>: IYamlSchemaPlugin where T : new()
+    public abstract class EntityPlugin<T>: IYamlSchemaPlugin<Database> where T : new()
     {
         public EntityPlugin(Func<Database, Dictionary<string, T>> selector, string subFolder, int minFileLength)
         {
