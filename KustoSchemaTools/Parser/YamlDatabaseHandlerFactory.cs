@@ -18,13 +18,9 @@ namespace KustoSchemaTools.Parser
             return this;
         }
 
-        public virtual IDatabaseHandler<T> Create(string deployment, string database) 
+        public virtual IDatabaseHandler<T> Create(string deployment, string database)
         {
             return new YamlDatabaseHandler<T>(deployment, database, Plugins);
         }
-    }
-
-    public class YamlDatabaseHandlerFactory : YamlDatabaseHandlerFactory<Database>
-    {
     }
 }

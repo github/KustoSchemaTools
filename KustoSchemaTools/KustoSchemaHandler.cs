@@ -7,9 +7,9 @@ using System.Text;
 
 namespace KustoSchemaTools
 {
-    public class KustoSchemaHandler
+    public class KustoSchemaHandler<T> where T : Database, new()
     {
-        public KustoSchemaHandler(ILogger<KustoSchemaHandler> schemaHandlerLogger, YamlDatabaseHandlerFactory yamlDatabaseHandlerFactory, KustoDatabaseHandlerFactory kustoDatabaseHandlerFactory)
+        public KustoSchemaHandler(ILogger<KustoSchemaHandler<T>> schemaHandlerLogger, YamlDatabaseHandlerFactory<T> yamlDatabaseHandlerFactory, KustoDatabaseHandlerFactory<T> kustoDatabaseHandlerFactory)
         {
             Log = schemaHandlerLogger;
             YamlDatabaseHandlerFactory = yamlDatabaseHandlerFactory;
@@ -17,8 +17,8 @@ namespace KustoSchemaTools
         }
 
         public ILogger Log { get; }
-        public YamlDatabaseHandlerFactory YamlDatabaseHandlerFactory { get; }
-        public KustoDatabaseHandlerFactory KustoDatabaseHandlerFactory { get; }
+        public YamlDatabaseHandlerFactory<T> YamlDatabaseHandlerFactory { get; }
+        public KustoDatabaseHandlerFactory<T> KustoDatabaseHandlerFactory { get; }
 
         public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path, string databaseName)
         {
@@ -42,12 +42,12 @@ namespace KustoSchemaTools
                 isValid &= changes.All(itm => itm.Scripts.All(itm => itm.IsValid != false));
 
                 sb.AppendLine($"# {cluster.Name}/{databaseName} ({cluster.Url})");
-            
+
                 if(changes.Count == 0)
                 {
                     sb.AppendLine("No changes detected");
                 }
-               
+
                 foreach (var change in changes)
                 {
                     sb.AppendLine(change.Markdown);
@@ -102,6 +102,6 @@ namespace KustoSchemaTools
                 var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
                 await dbHandler.WriteAsync(yamlDb);
             }
-        }    
+        }
     }
 }
