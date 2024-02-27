@@ -2,10 +2,10 @@
 
 namespace KustoSchemaTools.Parser
 {
-    public interface IDatabaseHandler
+    public interface IDatabaseHandler<T> where T: Database
     {
-        Task<Database> LoadAsync();
-        Task WriteAsync(Database database);
+        Task<T> LoadAsync();
+        Task WriteAsync(T database);
 
     }
 }

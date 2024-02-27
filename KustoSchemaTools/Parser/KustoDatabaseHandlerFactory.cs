@@ -1,4 +1,5 @@
-﻿using KustoSchemaTools.Plugins;
+﻿using KustoSchemaTools.Model;
+using KustoSchemaTools.Plugins;
 using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Parser
@@ -38,7 +39,7 @@ namespace KustoSchemaTools.Parser
 
         public ILogger<KustoDatabaseHandler> Logger { get; set; }
 
-        public IDatabaseHandler Create(string cluster, string database)
+        public IDatabaseHandler<Database> Create(string cluster, string database)
         {
             return new KustoDatabaseHandler(cluster, database, Logger, Reader, Writer);
         }
