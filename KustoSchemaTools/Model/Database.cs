@@ -19,6 +19,7 @@
         public Dictionary<string, MaterializedView> MaterializedViews { get; set; } = new Dictionary<string, MaterializedView>();
 
         public Dictionary<string, Function> Functions { get; set; } = new Dictionary<string, Function>();
+        public Dictionary<string, ContinuousExport> ContinuousExports { get; set; } = new Dictionary<string, ContinuousExport>();
 
         public List<DatabaseScript> Scripts { get; set; } = new List<DatabaseScript>();
 

@@ -107,8 +107,38 @@ namespace KustoSchemaTools.Changes
                 var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
                 if (changes.Any())
                 {
-                    log.LogInformation($"Detected changes for MaterializedViews: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
-                    result.Add(new Heading("MaterializedViews"));
+                    log.LogInformation($"Detected changes for Materialized Views: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
+                    result.Add(new Heading("Materialized Views"));
+                    result.AddRange(changes);
+                }
+            }
+
+            if (newState.ContinuousExports.Any())
+            {
+                var tmp = new List<IChange>();
+                var existingContinuousExports = oldState?.ContinuousExports ?? new Dictionary<string, ContinuousExport>();
+                log.LogInformation($"Existing materialized views: {string.Join(", ", existingContinuousExports.Keys)}");
+
+                foreach (var view in newState.ContinuousExports)
+                {
+                    if (existingContinuousExports.ContainsKey(view.Key))
+                    {
+                        var change = new ScriptCompareChange(view.Key, existingContinuousExports[view.Key], view.Value);
+                        log.LogInformation($"Continuous Exports {view.Key} exists, created {change.Scripts.Count} script to apply the diffs");
+                        tmp.Add(change);
+                    }
+                    else
+                    {
+                        var change = new ScriptCompareChange(view.Key, null, view.Value);
+                        log.LogInformation($"Continuous Exports {view.Key} doesn't exist, created {change.Scripts.Count} scripts to create the view");
+                        tmp.Add(change);
+                    }
+                }
+                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
+                if (changes.Any())
+                {
+                    log.LogInformation($"Detected changes for Continuous Exports: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
+                    result.Add(new Heading("Continuous Exports "));
                     result.AddRange(changes);
                 }
             }
