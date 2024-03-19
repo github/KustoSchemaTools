@@ -16,7 +16,6 @@ namespace KustoSchemaTools.Model
         public bool? UpdateExtentsCreationTime { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;
         public List<string> DimensionTables { get; set; }
-        public bool AllowMaterializedViewsWithoutRowLevelSecurity { get; set; } = false;
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
         [YamlMember(ScalarStyle = ScalarStyle.Literal)]
         public string Query { get; set; }
