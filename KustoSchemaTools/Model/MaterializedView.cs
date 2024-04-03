@@ -12,7 +12,6 @@ namespace KustoSchemaTools.Model
         public string DocString { get; set; } = "";
         public string? EffectiveDateTime { get; set; }
         public string Lookback { get; set; } = "";
-        public bool Backfill { get; set; } = false;
         public bool? UpdateExtentsCreationTime { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;
         public List<string> DimensionTables { get; set; }
