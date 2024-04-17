@@ -55,7 +55,7 @@ namespace KustoSchemaTools.Model
 
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable \"{RowLevelSecurity}\""));
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable ```{RowLevelSecurity}```"));
             }
             else
             {
