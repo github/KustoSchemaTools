@@ -26,7 +26,7 @@ namespace KustoSchemaTools.Helpers
         
         public static JsonSerializer CloneJsonSerializer { get; } = new JsonSerializer
         {
-            DefaultValueHandling = DefaultValueHandling.Ignore   
+            DefaultValueHandling = DefaultValueHandling.Ignore
         };
 
 
