@@ -1,4 +1,5 @@
 ﻿using KustoSchemaTools.Changes;
+using System.ComponentModel;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -8,10 +9,10 @@ namespace KustoSchemaTools.Model
     {
         public string Source { get; set; }
         public string Kind { get; set; } = "table";
-        public string Folder { get; set; } = "";
-        public string DocString { get; set; } = "";
+        public string Folder { get; set; }
+        public string DocString { get; set; }
         public string? EffectiveDateTime { get; set; }
-        public string Lookback { get; set; } = "";
+        public string Lookback { get; set; }
         public bool? UpdateExtentsCreationTime { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;
         public List<string> DimensionTables { get; set; }
@@ -27,7 +28,9 @@ namespace KustoSchemaTools.Model
             var scripts = new List<DatabaseScriptContainer>();
             var properties = string.Join(", ", GetType().GetProperties()
                 .Where(p => p.GetValue(this) != null && excludedProperies.Contains(p.Name) == false)
-                .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
+                .Select(p => new {Name = p.Name, Value = p.GetValue(this) })
+                .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
+                .Select(p => $"{p.Name}=\"{p.Value}\""));
             scripts.Add(new DatabaseScriptContainer("CreateOrAlterMaterializedView", 40, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
 
             if (RetentionAndCachePolicy != null)
