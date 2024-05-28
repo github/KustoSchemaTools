@@ -65,6 +65,11 @@ namespace KustoSchemaTools.Parser
                 {
                     entity.Value.RetentionAndCachePolicy = null;
                 }
+
+                if (database.MaterializedViews.ContainsKey(entity.Value.Source))
+                {
+                    entity.Value.Kind = "materialized-view";
+                }
             }
 
             foreach (var entity in database.Functions)
