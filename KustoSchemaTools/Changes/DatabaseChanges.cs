@@ -1,12 +1,11 @@
-﻿using Kusto.Language;
-using KustoSchemaTools.Model;
+﻿using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Changes
 {
     public class DatabaseChanges
     {
-        public static List<IChange> GenerateChanges(Database oldState, Database newState, string name, Microsoft.Extensions.Logging.ILogger log)
+        public static List<IChange> GenerateChanges(Database oldState, Database newState, string name, ILogger log)
         {
 
             var result = new List<IChange>();
@@ -35,7 +34,67 @@ namespace KustoSchemaTools.Changes
                     result.Add(c);
                 }
             }
+            if (oldState == null)
+            {
+                oldState = new Database();
+            }
 
+            result.AddRange(GeneratePermissionChanges(oldState, newState, name, log));
+
+            result.AddRange(GenerateDeletions(oldState, newState.Deletions, log));
+
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.MaterializedViews), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Functions, nameof(newState.MaterializedViews), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ExternalTables, nameof(newState.ExternalTables), log));
+
+            if (newState.EntityGroups.Any())
+            {
+                List<IChange> changes = GenerateEntityGroupChanges(oldState, newState, name);
+                if (changes.Any())
+                {
+                    log.LogInformation($"Detected changes for Entity Groups: {changes.Count}");
+                    result.Add(new Heading("Entity Groups"));
+                    result.AddRange(changes);
+                }
+            }
+
+
+            return result;
+        }
+
+        private static IEnumerable<IChange> GenerateDeletions(Database oldState, Deletions deletions, ILogger log)
+        {
+            var scripts = new List<IChange>();
+            scripts.AddRange(deletions.Tables.Where(oldState.Tables.ContainsKey).Select(itm => GenerateDeletionChange(itm, "table")));
+            var colDel = deletions.Columns
+                .Select(itm => itm.Split('.'))
+                .Select(itm => new { Table = itm[0], Column = itm[1] })
+                .Where(itm => oldState.Tables.ContainsKey(itm.Table) && oldState.Tables[itm.Table].Columns.ContainsKey(itm.Column))
+                .Select(itm => GenerateDeletionChange($"{itm.Table}.{itm.Column}", "column"))
+                .ToList();
+            scripts.AddRange(colDel);
+            scripts.AddRange(deletions.Functions.Where(oldState.Functions.ContainsKey).Select(itm => GenerateDeletionChange(itm, "function")));
+            scripts.AddRange(deletions.ExternalTables.Where(oldState.ExternalTables.ContainsKey).Select(itm => GenerateDeletionChange(itm, "external table")));
+            scripts.AddRange(deletions.MaterializedViews.Where(oldState.MaterializedViews.ContainsKey).Select(itm => GenerateDeletionChange(itm, "materialized-view")));
+            scripts.AddRange(deletions.ContinuousExports.Where(oldState.ContinuousExports.ContainsKey).Select(itm => GenerateDeletionChange(itm, "continuous-export")));
+
+            if (scripts.Any())
+            {
+                scripts.Insert(0, new Heading("Deletions"));
+            }
+            return scripts;
+        }
+
+        public static IChange GenerateDeletionChange(string entityName, string entityType)
+        {
+            return new DeletionChange(entityName, entityType);
+        }
+
+        private static List<IChange> GeneratePermissionChanges(Database oldState, Database newState, string name, ILogger log)
+        {
+            var result = new List<IChange>();
             var permissionChanges = new List<IChange>
             {
                 new PermissionChange(name, "Admins", oldState.Admins, newState.Admins),
@@ -46,189 +105,66 @@ namespace KustoSchemaTools.Changes
                 new PermissionChange(name, "Ingestors", oldState.Ingestors, newState.Ingestors),
             }.Where(itm => itm.Scripts.Any()).ToList();
 
-            if (permissionChanges.Any() )
+            if (permissionChanges.Any())
             {
                 log.LogInformation($"Detected {permissionChanges.Count} permission changes");
                 result.Add(new Heading("Permissions"));
-                result.AddRange(permissionChanges);
+                
             }
-
-            if (newState.Tables.Any())
-            {
-                var tmp = new List<IChange>();
-                var existingTables = oldState?.Tables ?? new Dictionary<string, Table>();
-                log.LogInformation($"Existing tables: {string.Join(", ", existingTables.Keys)}");
-
-                foreach (var table in newState.Tables)
-                {
-                    if (existingTables.ContainsKey(table.Key))
-                    {
-                        var change = new ScriptCompareChange(table.Key, existingTables[table.Key], table.Value);
-                        log.LogInformation($"Table {table.Key} exists, created {change.Scripts.Count} script to apply the diffs");
-                        tmp.Add(change);
-                    }
-                    else if (table.Value.Columns?.Count > 0)
-                    {
-                        var change = new ScriptCompareChange(table.Key, null, table.Value);
-                        log.LogInformation($"Table {table.Key} doesn't exist, created {change.Scripts.Count} scripts to create the table");
-                        tmp.Add(change);
-                    }
-                }
-                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
-                if (changes.Any())
-                {
-                    log.LogInformation($"Detected changes for Tables: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
-                    result.Add(new Heading("Tables"));
-                    result.AddRange(changes);
-                }
-            }
-
-            if (newState.MaterializedViews.Any())
-            {
-                var tmp = new List<IChange>();
-                var existingMaterializedViews = oldState?.MaterializedViews ?? new Dictionary<string, MaterializedView>();
-                log.LogInformation($"Existing materialized views: {string.Join(", ", existingMaterializedViews.Keys)}");
-
-                foreach (var view in newState.MaterializedViews)
-                {
-                    if (existingMaterializedViews.ContainsKey(view.Key))
-                    {
-                        var change = new ScriptCompareChange(view.Key, existingMaterializedViews[view.Key], view.Value);
-                        log.LogInformation($"Materialized view {view.Key} exists, created {change.Scripts.Count} script to apply the diffs");
-                        tmp.Add(change);
-                    }
-                    else
-                    {
-                        var change = new ScriptCompareChange(view.Key, null, view.Value);
-                        log.LogInformation($"Materialized view {view.Key} doesn't exist, created {change.Scripts.Count} scripts to create the view");
-                        tmp.Add(change);
-                    }
-                }
-                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
-                if (changes.Any())
-                {
-                    log.LogInformation($"Detected changes for Materialized Views: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
-                    result.Add(new Heading("Materialized Views"));
-                    result.AddRange(changes);
-                }
-            }
-
-            if (newState.ContinuousExports.Any())
-            {
-                var tmp = new List<IChange>();
-                var existingContinuousExports = oldState?.ContinuousExports ?? new Dictionary<string, ContinuousExport>();
-                log.LogInformation($"Existing materialized views: {string.Join(", ", existingContinuousExports.Keys)}");
-
-                foreach (var view in newState.ContinuousExports)
-                {
-                    if (existingContinuousExports.ContainsKey(view.Key))
-                    {
-                        var change = new ScriptCompareChange(view.Key, existingContinuousExports[view.Key], view.Value);
-                        log.LogInformation($"Continuous Exports {view.Key} exists, created {change.Scripts.Count} script to apply the diffs");
-                        tmp.Add(change);
-                    }
-                    else
-                    {
-                        var change = new ScriptCompareChange(view.Key, null, view.Value);
-                        log.LogInformation($"Continuous Exports {view.Key} doesn't exist, created {change.Scripts.Count} scripts to create the view");
-                        tmp.Add(change);
-                    }
-                }
-                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
-                if (changes.Any())
-                {
-                    log.LogInformation($"Detected changes for Continuous Exports: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
-                    result.Add(new Heading("Continuous Exports "));
-                    result.AddRange(changes);
-                }
-            }
-
-            if (newState.Functions.Any())
-            {
-                var tmp = new List<IChange>();
-                var existingFunctions = oldState?.Functions ?? new Dictionary<string, Function>();
-                log.LogInformation($"Existing functions: {string.Join(", ", existingFunctions.Keys)}");
-
-                foreach (var function in newState.Functions)
-                {
-                    if (existingFunctions.ContainsKey(function.Key))
-                    {
-                        var existingFunction = existingFunctions[function.Key];
-                        var change = new ScriptCompareChange(function.Key, existingFunction, function.Value);
-                        log.LogInformation($"Function {function.Key} exists, created {change.Scripts.Count} script to apply the diffs");
-                        tmp.Add(change);
-                    }
-                    else
-                    {
-                        var change = new ScriptCompareChange(function.Key, null, function.Value);
-                        log.LogInformation($"Function {function.Key} doesn't exist, created {change.Scripts.Count} scripts to create the function");
-                        tmp.Add(change);
-                    }
-                }
-                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
-                if (changes.Any())
-                {
-                    log.LogInformation($"Detected changes for Functions: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
-                    result.Add(new Heading("Functions"));
-                    result.AddRange(changes);
-                }
-            }            
-
-            if(newState.EntityGroups.Any())
-            {
-                var changes = new List<IChange>();
-                var existingEntityGroups = oldState?.EntityGroups ?? new Dictionary<string, List<Entity>>();
-                foreach (var group in newState.EntityGroups)
-                {
-                    var existing = existingEntityGroups.ContainsKey(group.Key) ? existingEntityGroups[group.Key] : null;
-                    var change = new EntityGroupChange(name, group.Key, existing, group.Value);
-                    if(change.Scripts.Any())
-                    {
-                        changes.Add(change);
-                    }
-                }
-                if (changes.Any())
-                {
-                    log.LogInformation($"Detected changes for Entity Groups: {changes.Count}");
-                    result.Add(new Heading("Entity Groups"));
-                    result.AddRange(changes);
-                }
-            }
-
-            if (newState.ExternalTables.Any())
-            {
-                var tmp = new List<IChange>();
-                var existingExternalTable = oldState?.ExternalTables ?? new Dictionary<string, ExternalTable>();
-                log.LogInformation($"Existing functions: {string.Join(", ", existingExternalTable.Keys)}");
-
-                foreach (var extTable in newState.ExternalTables)
-                {
-                    if (existingExternalTable.ContainsKey(extTable.Key))
-                    {
-                        var existingFunction = existingExternalTable[extTable.Key];
-                        var change = new ScriptCompareChange(extTable.Key, existingFunction, extTable.Value);
-                        log.LogInformation($"Function {extTable.Key} exists, created {change.Scripts.Count} script to apply the diffs");
-                        tmp.Add(change);
-                    }
-                    else
-                    {
-                        var change = new ScriptCompareChange(extTable.Key, null, extTable.Value);
-                        log.LogInformation($"Function {extTable.Key} doesn't exist, created {change.Scripts.Count} scripts to create the function");
-                        tmp.Add(change);
-                    }
-                }
-                var changes = tmp.Where(itm => itm.Scripts.Any()).ToList();
-                if (changes.Any())
-                {
-                    log.LogInformation($"Detected changes for Functions: {changes.Count} changes with {changes.SelectMany(itm => itm.Scripts).Count()} scripts");
-                    result.Add(new Heading("Functions"));
-                    result.AddRange(changes);
-                }
-
-            }
-
 
             return result;
+        }
+
+        private static List<IChange> GenerateEntityGroupChanges(Database oldState, Database newState, string name)
+        {
+            var changes = new List<IChange>();
+            var existingEntityGroups = oldState?.EntityGroups ?? new Dictionary<string, List<Entity>>();
+            foreach (var group in newState.EntityGroups)
+            {
+                var existing = existingEntityGroups.ContainsKey(group.Key) ? existingEntityGroups[group.Key] : null;
+                var change = new EntityGroupChange(name, group.Key, existing, group.Value);
+                if (change.Scripts.Any())
+                {
+                    changes.Add(change);
+                }
+            }
+
+            return changes;
+        }
+
+        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState,Func<Database,Dictionary<string,T>> entitySelector,string entityName, ILogger log) where T: IKustoBaseEntity
+        {
+            var tmp = new List<IChange>();
+            var existing = entitySelector(oldState) ?? new Dictionary<string, T>();
+            var newItems = entitySelector(newState) ?? new Dictionary<string, T>();
+
+
+            log.LogInformation($"Existing {entityName}: {string.Join(", ", existing.Keys)}");
+
+            foreach (var item in newItems)
+            {
+                if (existing.ContainsKey(item.Key))
+                {
+                    var change = new ScriptCompareChange(item.Key, existing[item.Key], item.Value);
+                    log.LogInformation($"{item.Key} already exists, created {change.Scripts.Count} script to apply the diffs");
+                    tmp.Add(change);
+                }
+                else
+                {
+                    var change = new ScriptCompareChange(item.Key, null, item.Value);
+                    log.LogInformation($"{item.Key} doesn't exist, created {change.Scripts.Count} scripts to create it.");
+                    tmp.Add(change);
+                }
+            }
+
+            tmp = tmp.Where(itm => itm.Scripts?.Any() == true).ToList();
+
+            if(tmp.Count > 0)
+            {
+                tmp.Insert(0, new Heading(entityName));
+            }
+
+            return tmp;
         }
     }
 
