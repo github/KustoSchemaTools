@@ -45,8 +45,8 @@ namespace KustoSchemaTools.Changes
 
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log));
-            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.MaterializedViews), log));
-            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Functions, nameof(newState.MaterializedViews), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.ContinuousExports), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Functions, nameof(newState.Functions), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ExternalTables, nameof(newState.ExternalTables), log));
 
             if (newState.EntityGroups.Any())
