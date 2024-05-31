@@ -59,5 +59,18 @@ Currently following features are supported:
     * HotCache
     * Docstring
     * Folder
+* External Tables (managed identity/impersonation only)
+    * Storage / Delta / SQL
+    * Folder
+    * Docstring
+* Continous Exports
+* Entity Groups
+* Deleting existing items using deletions in the database definition
+    * Tables
+    * Columns
+    * Functions
+    * Materialized Views
+    * Extenal Tables
+    * Continous Exports
 
-The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies and materialized views.
+The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies,materialized views and continous exports.

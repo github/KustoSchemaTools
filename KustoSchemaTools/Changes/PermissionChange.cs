@@ -9,7 +9,7 @@ namespace KustoSchemaTools.Changes
 
     public class PermissionChange : BaseChange<List<AADObject>>
     {
-        public PermissionChange(string db, string entity, List<AADObject>? from, List<AADObject> to) : base("Permissions", entity, from ?? new List<AADObject>(), to)
+        public PermissionChange(string db, string entity, List<AADObject> from, List<AADObject> to) : base("Permissions", entity, from ?? new List<AADObject>(), to)
         {
             Db = db;
             Init();

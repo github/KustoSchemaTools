@@ -29,6 +29,8 @@
 
         public List<Metadata> Metadata { get; set; } = new List<Metadata> { };
 
+        public Deletions Deletions { get; set; } = new Deletions();
+
     }
 
 }
