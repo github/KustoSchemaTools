@@ -108,11 +108,11 @@ namespace KustoSchemaTools.Changes
             if (permissionChanges.Any())
             {
                 log.LogInformation($"Detected {permissionChanges.Count} permission changes");
-                result.Add(new Heading("Permissions"));
+                permissionChanges.Insert(0,new Heading("Permissions"));
                 
             }
 
-            return result;
+            return permissionChanges;
         }
 
         private static List<IChange> GenerateEntityGroupChanges(Database oldState, Database newState, string name)
