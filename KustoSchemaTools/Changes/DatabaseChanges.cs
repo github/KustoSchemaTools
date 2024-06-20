@@ -1,5 +1,6 @@
 ﻿using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
+using System.Data;
 
 namespace KustoSchemaTools.Changes
 {
@@ -43,7 +44,7 @@ namespace KustoSchemaTools.Changes
 
             result.AddRange(GenerateDeletions(oldState, newState.Deletions, log));
 
-            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log));
+            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log, (oldItem, newItem) => oldItem != null || newItem.Columns?.Any() == true));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.ContinuousExports), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Functions, nameof(newState.Functions), log));
@@ -132,7 +133,9 @@ namespace KustoSchemaTools.Changes
             return changes;
         }
 
-        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState,Func<Database,Dictionary<string,T>> entitySelector,string entityName, ILogger log) where T: IKustoBaseEntity
+
+
+        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState,Func<Database,Dictionary<string,T>> entitySelector,string entityName, ILogger log, Func<T?,T,bool> validator = null) where T: IKustoBaseEntity
         {
             var tmp = new List<IChange>();
             var existing = entitySelector(oldState) ?? new Dictionary<string, T>();
@@ -143,6 +146,12 @@ namespace KustoSchemaTools.Changes
 
             foreach (var item in newItems)
             {
+                var existingOldItem = existing.ContainsKey(item.Key) ? existing[item.Key] : default(T);
+                if(validator != null && !validator(existingOldItem, item.Value))
+                {
+                    log.LogInformation($"Skipping {entityName} {item.Key} as it failed validation");
+                    continue;
+                }
                 if (existing.ContainsKey(item.Key))
                 {
                     var change = new ScriptCompareChange(item.Key, existing[item.Key], item.Value);
