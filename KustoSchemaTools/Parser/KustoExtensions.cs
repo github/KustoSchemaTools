@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System.Data;
 using Kusto.Language.Editor;
 using Kusto.Language;
+using Kusto.Data;
 
 namespace KustoSchemaTools.Parser
 {
@@ -68,7 +69,10 @@ namespace KustoSchemaTools.Parser
             return cluster.StartsWith("https") ? cluster : $"https://{ingestPrefix}{cluster}.kusto.windows.net";
         }
 
-
+        public static bool IsFinal(this ScriptExecuteCommandResult command)
+        {
+            return command.Result == "Completed" || command.Result == "Failed" || command.Result == "Succeeded";
+        }
         public static string PrettifyKql(this string query)
         {
             return new KustoCodeService(KustoCode.Parse(query)).GetFormattedText().Text;

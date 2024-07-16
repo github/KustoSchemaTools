@@ -4,7 +4,7 @@ namespace KustoSchemaTools.Model
 {
     public interface IKustoBaseEntity
     {
-        List<DatabaseScriptContainer> CreateScripts(string name);
+        List<DatabaseScriptContainer> CreateScripts(string name, bool isNew);
     }
 
 }
