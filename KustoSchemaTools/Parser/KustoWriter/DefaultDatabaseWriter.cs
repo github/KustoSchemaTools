@@ -51,13 +51,13 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 }
                 else
                 {
-                    var batchResults = await ExecutePendingSync(databaseName, client, logger, scripts);
+                    var batchResults = await ExecutePendingSync(databaseName, client, logger, batch);
                     results.AddRange(batchResults);
                     var asyncResult = await ExecuteAsyncCommand(databaseName, client, logger, sc);
                     results.Add(asyncResult);
                 }
             }
-            var finalBatchResults = await ExecutePendingSync(databaseName, client, logger, scripts);
+            var finalBatchResults = await ExecutePendingSync(databaseName, client, logger, batch);
             results.AddRange(finalBatchResults);
             return results;
 
@@ -80,8 +80,8 @@ namespace KustoSchemaTools.Parser.KustoWriter
                     finalState = true;
                 }
                 await Task.Delay(1000);
-                var monitoringResult = await client.AdminClient.ExecuteControlCommandAsync(databaseName, sc.Text);
-                var operationState = result.As<ScriptExecuteCommandResult>().FirstOrDefault();
+                var monitoringResult =  client.Client.ExecuteQuery(databaseName, monitoringCommand, new Kusto.Data.Common.ClientRequestProperties());
+                var operationState = monitoringResult.As<ScriptExecuteCommandResult>().FirstOrDefault();
 
                 if (operationState != null && operationState?.IsFinal() == true)
                 {
