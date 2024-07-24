@@ -81,7 +81,6 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 }
 
                 logger.LogInformation($"Waiting for operation {operationId} to complete... current iteration: {cnt}/3600");
-                await Task.Delay(1000);
                 var monitoringResult =  client.Client.ExecuteQuery(databaseName, monitoringCommand, new Kusto.Data.Common.ClientRequestProperties());
                 var operationState = monitoringResult.As<ScriptExecuteCommandResult>().FirstOrDefault();
                 
@@ -90,6 +89,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
                     operationState.CommandText = sc.Text;
                     return operationState;
                 }
+                await Task.Delay(1000);
             }
             throw new Exception("Operation did not complete in a reasonable time");
         }
