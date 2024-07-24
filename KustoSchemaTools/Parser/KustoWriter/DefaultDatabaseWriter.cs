@@ -79,10 +79,12 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 {
                     finalState = true;
                 }
+
+                logger.LogInformation($"Waiting for operation {operationId} to complete... current iteration: {cnt}/3600");
                 await Task.Delay(1000);
                 var monitoringResult =  client.Client.ExecuteQuery(databaseName, monitoringCommand, new Kusto.Data.Common.ClientRequestProperties());
                 var operationState = monitoringResult.As<ScriptExecuteCommandResult>().FirstOrDefault();
-
+                
                 if (operationState != null && operationState?.IsFinal() == true)
                 {
                     operationState.CommandText = sc.Text;
