@@ -65,7 +65,8 @@ namespace KustoSchemaTools.Parser.KustoWriter
 
         private async Task<ScriptExecuteCommandResult> ExecuteAsyncCommand(string databaseName, KustoClient client, ILogger logger, DatabaseScriptContainer sc)
         {
-            
+            var interval = TimeSpan.FromSeconds(5);
+            var iterations = (int)(TimeSpan.FromHours(1) / interval);
             var result = await client.AdminClient.ExecuteControlCommandAsync(databaseName, sc.Text);
             var operationId = result.ToScalar<Guid>();
             var finalState = false;
@@ -75,12 +76,12 @@ namespace KustoSchemaTools.Parser.KustoWriter
             int cnt = 0;
             while (!finalState)
             {
-                if(cnt++ >= 3600)
+                if(cnt++ >= iterations)
                 {
                     finalState = true;
                 }
 
-                logger.LogInformation($"Waiting for operation {operationId} to complete... current iteration: {cnt}/3600");
+                logger.LogInformation($"Waiting for operation {operationId} to complete... current iteration: {cnt}/{iterations}");
                 var monitoringResult =  client.Client.ExecuteQuery(databaseName, monitoringCommand, new Kusto.Data.Common.ClientRequestProperties());
                 var operationState = monitoringResult.As<ScriptExecuteCommandResult>().FirstOrDefault();
                 
@@ -89,7 +90,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
                     operationState.CommandText = sc.Text;
                     return operationState;
                 }
-                await Task.Delay(1000);
+                await Task.Delay(interval);
             }
             throw new Exception("Operation did not complete in a reasonable time");
         }
