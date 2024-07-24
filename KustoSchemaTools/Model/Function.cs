@@ -18,7 +18,7 @@ namespace KustoSchemaTools.Model
 
         public string Body { get; set; }
 
-        public List<DatabaseScriptContainer> CreateScripts(string name)
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var properties = GetType().GetProperties()
                 .Where(p => p.GetValue(this) != null && p.Name != "Body" && p.Name != "Parameters")

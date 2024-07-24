@@ -11,7 +11,7 @@ namespace KustoSchemaTools.Changes
 
         public List<DatabaseScriptContainer> Scripts { get; }
 
-        public List<DatabaseScriptContainer> CreateScripts(string name)
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             return Scripts;
         }

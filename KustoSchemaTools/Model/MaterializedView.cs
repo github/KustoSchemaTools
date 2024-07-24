@@ -14,6 +14,7 @@ namespace KustoSchemaTools.Model
         public string? EffectiveDateTime { get; set; }
         public string Lookback { get; set; }
         public bool? UpdateExtentsCreationTime { get; set; }
+        public bool? Backfill { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;
         public List<string> DimensionTables { get; set; }
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
@@ -21,9 +22,17 @@ namespace KustoSchemaTools.Model
         public string Query { get; set; }
         public string? RowLevelSecurity { get; set; }
 
-        public List<DatabaseScriptContainer> CreateScripts(string name)
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
-            var excludedProperies = new HashSet<string>( new[] { "Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity" });
+            var asyncSetup = isNew && Backfill == true && !string.IsNullOrWhiteSpace(EffectiveDateTime);
+
+
+            var excludedProperies = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity"]);
+            if (!asyncSetup)
+            {
+                excludedProperies.Add("EffectiveDateTime");
+                excludedProperies.Add("Backfill");
+            }
 
             var scripts = new List<DatabaseScriptContainer>();
             var properties = string.Join(", ", GetType().GetProperties()
@@ -31,10 +40,20 @@ namespace KustoSchemaTools.Model
                 .Select(p => new {Name = p.Name, Value = p.GetValue(this) })
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
                 .Select(p => $"{p.Name}=\"{p.Value}\""));
-            scripts.Add(new DatabaseScriptContainer("CreateOrAlterMaterializedView", 40, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
+
+            if (asyncSetup)
+            {
+                scripts.Add(new DatabaseScriptContainer("CreateMaterializedView", Kind == "table" ? 40 : 41, $".create async ifnotexists materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}", true));
+            }
+            else
+            {
+                scripts.Add(new DatabaseScriptContainer("CreateMaterializedView", Kind == "table" ? 40 : 41, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
+            }
 
             if (RetentionAndCachePolicy != null)
+            {
                 scripts.AddRange(RetentionAndCachePolicy.CreateScripts(name, "materialized-view"));
+            }
 
 
             if (!string.IsNullOrEmpty(RowLevelSecurity))

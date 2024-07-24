@@ -1,5 +1,4 @@
 ﻿using Kusto.Data;
-using Kusto.Toolkit;
 using KustoSchemaTools.Changes;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
@@ -38,9 +37,70 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 .SelectMany(itm => itm.Scripts)
                 .Where(itm => itm.Order >= 0)
                 .Where(itm => itm.IsValid == true)
-               .OrderBy(itm => itm.Order)
+                .OrderBy(itm => itm.Order)
                 .ToList();
 
+            var results = new List<ScriptExecuteCommandResult>();
+            var batch = new List<DatabaseScriptContainer>();
+            foreach (var sc in scripts)
+            {
+                if (sc.IsAsync == false)
+                {
+                    batch.Add(sc);
+                    continue;
+                }
+                else
+                {
+                    var batchResults = await ExecutePendingSync(databaseName, client, logger, batch);
+                    results.AddRange(batchResults);
+                    var asyncResult = await ExecuteAsyncCommand(databaseName, client, logger, sc);
+                    results.Add(asyncResult);
+                }
+            }
+            var finalBatchResults = await ExecutePendingSync(databaseName, client, logger, batch);
+            results.AddRange(finalBatchResults);
+            return results;
+
+        }
+
+        private async Task<ScriptExecuteCommandResult> ExecuteAsyncCommand(string databaseName, KustoClient client, ILogger logger, DatabaseScriptContainer sc)
+        {
+            var interval = TimeSpan.FromSeconds(5);
+            var iterations = (int)(TimeSpan.FromHours(1) / interval);
+            var result = await client.AdminClient.ExecuteControlCommandAsync(databaseName, sc.Text);
+            var operationId = result.ToScalar<Guid>();
+            var finalState = false;
+            string monitoringCommand = $".show operations | where OperationId ==  '{operationId}' " +
+                "| summarize arg_max(LastUpdatedOn, *) by OperationId " +
+                "| project OperationId, CommandType = Operation, Result = State, Reason = Status";
+            int cnt = 0;
+            while (!finalState)
+            {
+                if(cnt++ >= iterations)
+                {
+                    finalState = true;
+                }
+
+                logger.LogInformation($"Waiting for operation {operationId} to complete... current iteration: {cnt}/{iterations}");
+                var monitoringResult =  client.Client.ExecuteQuery(databaseName, monitoringCommand, new Kusto.Data.Common.ClientRequestProperties());
+                var operationState = monitoringResult.As<ScriptExecuteCommandResult>().FirstOrDefault();
+                
+                if (operationState != null && operationState?.IsFinal() == true)
+                {
+                    operationState.CommandText = sc.Text;
+                    return operationState;
+                }
+                await Task.Delay(interval);
+            }
+            throw new Exception("Operation did not complete in a reasonable time");
+        }
+
+        private static async Task<List<ScriptExecuteCommandResult>> ExecutePendingSync(string databaseName, KustoClient client, ILogger logger, List<DatabaseScriptContainer> scripts)
+        {
+            if(scripts.Any() == false)
+            {
+                return new List<ScriptExecuteCommandResult>();
+            } 
             var sb = new StringBuilder();
             sb.AppendLine(".execute script with(ContinueOnErrors = true) <|");
             foreach (var sc in scripts)

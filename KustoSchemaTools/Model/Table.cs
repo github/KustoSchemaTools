@@ -17,7 +17,7 @@ namespace KustoSchemaTools.Model
         public bool RestrictedViewAccess { get; set; } = false;
         public string? RowLevelSecurity { get; set; }
 
-        public List<DatabaseScriptContainer> CreateScripts(string name)
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var scripts = new List<DatabaseScriptContainer>();
             if (Columns != null)

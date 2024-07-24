@@ -14,7 +14,7 @@ namespace KustoSchemaTools.Model
         [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public string Query { get; set; }
 
-        public List<DatabaseScriptContainer> CreateScripts(string name)
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             return new List<DatabaseScriptContainer>
             {
