@@ -99,7 +99,7 @@ namespace KustoSchemaTools
 
             var results = new ConcurrentDictionary<string,Exception>();
 
-            await Parallel.ForEachAsync(clusters.Connections, new ParallelOptions { MaxDegreeOfParallelism = 1}, async (cluster, token) =>
+            await Parallel.ForEachAsync(clusters.Connections, async (cluster, token) =>
             {
                 try
                 {
