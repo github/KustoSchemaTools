@@ -3,6 +3,8 @@ using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Data;
 using System.Text;
 
 namespace KustoSchemaTools
@@ -87,7 +89,7 @@ namespace KustoSchemaTools
         }
 
 
-        public async Task Apply(string path, string databaseName)
+        public async Task<ConcurrentDictionary<string,Exception>> Apply(string path, string databaseName)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
@@ -95,13 +97,24 @@ namespace KustoSchemaTools
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
             var yamlDb = await yamlHandler.LoadAsync();
 
-            foreach (var cluster in clusters.Connections)
-            {
-                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
+            var results = new ConcurrentDictionary<string,Exception>();
 
-                var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
-                await dbHandler.WriteAsync(yamlDb);
-            }
+            await Parallel.ForEachAsync(clusters.Connections, new ParallelOptions { MaxDegreeOfParallelism = 1}, async (cluster, token) =>
+            {
+                try
+                {
+                    Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
+                    var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
+                    await dbHandler.WriteAsync(yamlDb);
+                    results.TryAdd(cluster.Url, null);
+                }
+                catch (Exception ex)
+                {
+                    results.TryAdd(cluster.Url, ex);
+                }
+            });
+
+            return results;
         }
     }
 }
