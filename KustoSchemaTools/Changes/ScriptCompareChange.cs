@@ -20,7 +20,7 @@ namespace KustoSchemaTools.Changes
         private void Init()
         {
             var from = From?.CreateScripts(Entity, false).ToDictionary(itm => itm.Kind) ?? new Dictionary<string, DatabaseScriptContainer>();
-            var to = To.CreateScripts(Entity, from != null);
+            var to = To.CreateScripts(Entity, from == null);
             Markdown = string.Empty;
 
             if (to.Any() == false) return;
