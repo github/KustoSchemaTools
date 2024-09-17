@@ -24,7 +24,7 @@ namespace KustoSchemaTools.Model
 
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
-            var asyncSetup = isNew && Backfill == true && !string.IsNullOrWhiteSpace(EffectiveDateTime);
+            var asyncSetup = isNew && Backfill == true;
 
 
             var excludedProperies = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity"]);
