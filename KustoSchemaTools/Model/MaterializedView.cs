@@ -17,10 +17,13 @@ namespace KustoSchemaTools.Model
         public bool? Backfill { get; set; }
         public bool AutoUpdateSchema { get; set; } = false;
         public List<string> DimensionTables { get; set; }
+        [Obsolete("Use policies instead")]
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
         [YamlMember(ScalarStyle = ScalarStyle.Literal)]
         public string Query { get; set; }
+        [Obsolete("Use policies instead")]
         public string? RowLevelSecurity { get; set; }
+        public Policy? Policies { get; set; }
 
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
@@ -41,6 +44,7 @@ namespace KustoSchemaTools.Model
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
                 .Select(p => $"{p.Name}=\"{p.Value}\""));
 
+  
             if (asyncSetup)
             {
                 scripts.Add(new DatabaseScriptContainer("CreateMaterializedView", Kind == "table" ? 40 : 41, $".create async ifnotexists materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}", true));
@@ -49,21 +53,11 @@ namespace KustoSchemaTools.Model
             {
                 scripts.Add(new DatabaseScriptContainer("CreateMaterializedView", Kind == "table" ? 40 : 41, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
             }
-
-            if (RetentionAndCachePolicy != null)
+            if (Policies != null)
             {
-                scripts.AddRange(RetentionAndCachePolicy.CreateScripts(name, "materialized-view"));
+                scripts.AddRange(Policies.CreateScripts(name, "materialized-view"));
             }
-
-
-            if (!string.IsNullOrEmpty(RowLevelSecurity))
-            {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter materialized-view {name} policy row_level_security enable \"{RowLevelSecurity}\""));
-            }
-            else
-            {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".delete materialized-view {name} policy row_level_security"));
-            }
+           
             return scripts;
         }
     }

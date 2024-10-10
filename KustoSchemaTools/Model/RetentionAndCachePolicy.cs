@@ -2,6 +2,7 @@
 
 namespace KustoSchemaTools.Model
 {
+    [Obsolete("Use policies instead")]
     public class RetentionAndCachePolicy
     {
         public string? Retention { get; set; }
@@ -9,6 +10,8 @@ namespace KustoSchemaTools.Model
 
         public List<DatabaseScriptContainer> CreateScripts(string name, string entity)
         {
+            if (entity != "database") throw new NotImplementedException();
+
             var scripts = new List<DatabaseScriptContainer>();
             if (Retention != null)
             {
