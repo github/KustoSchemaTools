@@ -9,14 +9,18 @@ namespace KustoSchemaTools.Model
     {
 
         public string Folder { get; set; }
+        [Obsolete("Use policies instead")]
         public RetentionAndCachePolicy RetentionAndCachePolicy { get; set; } = new RetentionAndCachePolicy();
+
         public Dictionary<string, string> Columns { get; set; }
+        [Obsolete("Use policies instead")]
         public List<UpdatePolicy> UpdatePolicies { get; set; }
+        public TablePolicy? Policies { get; set; }
         public List<DatabaseScript> Scripts { get; set; }
         public string DocString { get; set; }
-        public bool RestrictedViewAccess { get; set; } = false;
+        [Obsolete("Use policies instead")]
         public string? RowLevelSecurity { get; set; }
-
+                
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var scripts = new List<DatabaseScriptContainer>();
@@ -28,39 +32,20 @@ namespace KustoSchemaTools.Model
 
                 scripts.Add(new DatabaseScriptContainer("CreateMergeTable", 30, $".create-merge table {name} ({string.Join(", ", Columns.Select(c => $"{c.Key.BracketIfIdentifier()}:{c.Value}"))})"));
             }
-            else
-            {
-
-            }
 
             scripts.Add(new DatabaseScriptContainer("TableFolder", 31, $".alter table {name} folder '{Folder}'"));
             scripts.Add(new DatabaseScriptContainer("TableDocString", 31, $".alter table {name} docstring '{DocString}'"));
-            var ups = UpdatePolicies ?? new List<UpdatePolicy>();
-            var policies = JsonConvert.SerializeObject(ups, Serialization.JsonPascalCase);
-            var upPriority = ups.Any() ? 59 : 50;
-            scripts.Add(new DatabaseScriptContainer("TableUpdatePolicy", upPriority, $".alter table {name} policy update ```{policies}```"));
+           
 
-            if (RetentionAndCachePolicy != null)
+            if (Policies != null)
             {
-                scripts.AddRange(RetentionAndCachePolicy.CreateScripts(name, "table"));
+                scripts.AddRange(Policies.CreateScripts(name));
             }
             if (Scripts != null)
             {
                 scripts.AddRange(Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
             }
-
-            var rvaPrio = RestrictedViewAccess ? 58 : 51;
-            scripts.Add(new DatabaseScriptContainer("RestrictedViewAccess", rvaPrio, $".alter table {name} policy restricted_view_access {(RestrictedViewAccess ? "true" : "false")}"));
-
-
-            if (!string.IsNullOrEmpty(RowLevelSecurity))
-            {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter table {name} policy row_level_security enable ```{RowLevelSecurity}```"));
-            }
-            else
-            {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 52, $".delete table {name} policy row_level_security"));
-            }
+        
             return scripts;
         }
     }

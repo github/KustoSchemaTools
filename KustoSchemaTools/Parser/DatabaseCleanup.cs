@@ -25,47 +25,105 @@ namespace KustoSchemaTools.Parser
 
         public void CleanUp(Database database)
         {
-
-            // Remove retention and cache policies from tables and materialized views if they are the same as the database default
             foreach (var entity in database.Tables)
             {
-                var policy = entity.Value.RetentionAndCachePolicy;
+                if (entity.Value.Policies == null)
+                {
+                    entity.Value.Policies = new();
+                }
+            }
+            foreach (var entity in database.MaterializedViews)
+            {
+                if (entity.Value.Policies == null)
+                {
+                    entity.Value.Policies = new();
+                }
+            }
 
-                if (policy == null) continue;
+            // Consolidate old policies into the new policy object before processing
+            foreach (var entity in database.Tables)
+            {
+                if (entity.Value.Policies == null)
+                {
+                    entity.Value.Policies = new();
+                }
+                var policy = entity.Value.Policies;
+
+                if (entity.Value.RetentionAndCachePolicy != null)
+                {
+                    if (string.IsNullOrWhiteSpace(entity.Value.RetentionAndCachePolicy.Retention) == false && string.IsNullOrWhiteSpace(policy.Retention))
+                    {
+                        policy.Retention = entity.Value.RetentionAndCachePolicy.Retention;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(entity.Value.RetentionAndCachePolicy.HotCache) == false && string.IsNullOrWhiteSpace(policy.HotCache))
+                    {
+                        policy.HotCache = entity.Value.RetentionAndCachePolicy.HotCache;
+                    }
+                    entity.Value.RetentionAndCachePolicy = null;
+                }
+                if (entity.Value.UpdatePolicies != null && policy.UpdatePolicies == null)
+                {
+                    policy.UpdatePolicies = entity.Value.UpdatePolicies;
+                }
+
+                if (string.IsNullOrWhiteSpace(entity.Value.RowLevelSecurity) == false && string.IsNullOrWhiteSpace(policy.RowLevelSecurity))
+                {
+                    policy.RowLevelSecurity = entity.Value.RowLevelSecurity;
+                }
 
                 if (policy.Retention == database.DefaultRetentionAndCache.Retention)
                 {
                     policy.Retention = null;
                 }
+
                 if (policy.HotCache == database.DefaultRetentionAndCache.HotCache)
                 {
                     policy.HotCache = null;
-                }
-                if (policy.HotCache == null && policy.Retention == null)
-                {
-                    entity.Value.RetentionAndCachePolicy = null;
                 }
             }
 
             foreach (var entity in database.MaterializedViews)
             {
-                var policy = entity.Value.RetentionAndCachePolicy;
+                if (entity.Value.Policies == null)
+                {
+                    entity.Value.Policies = new();
+                }
+                var policy = entity.Value.Policies;
 
-                if (policy == null) continue;
+                if (entity.Value.RetentionAndCachePolicy != null)
+                {
+                    if (string.IsNullOrWhiteSpace(entity.Value.RetentionAndCachePolicy.Retention) == false && string.IsNullOrWhiteSpace(policy.Retention))
+                    {
+                        policy.Retention = entity.Value.RetentionAndCachePolicy.Retention;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(entity.Value.RetentionAndCachePolicy.HotCache) == false && string.IsNullOrWhiteSpace(policy.HotCache))
+                    {
+                        policy.HotCache = entity.Value.RetentionAndCachePolicy.HotCache;
+                    }
+                    entity.Value.RetentionAndCachePolicy = null;
+                }
+
+                if (string.IsNullOrWhiteSpace(entity.Value.RowLevelSecurity) == false && string.IsNullOrWhiteSpace(policy.RowLevelSecurity))
+                {
+                    policy.RowLevelSecurity = entity.Value.RowLevelSecurity;
+                }
 
                 if (policy.Retention == database.DefaultRetentionAndCache.Retention)
                 {
                     policy.Retention = null;
                 }
+
                 if (policy.HotCache == database.DefaultRetentionAndCache.HotCache)
                 {
                     policy.HotCache = null;
                 }
-                if (policy.HotCache == null && policy.Retention == null)
-                {
-                    entity.Value.RetentionAndCachePolicy = null;
-                }
+                entity.Value.Query = entity.Value.Query.PrettifyKql();
+            }
 
+            foreach(var entity in database.MaterializedViews)
+            {
                 if (database.MaterializedViews.ContainsKey(entity.Value.Source))
                 {
                     entity.Value.Kind = "materialized-view";
@@ -76,11 +134,7 @@ namespace KustoSchemaTools.Parser
             {
                 entity.Value.Body = entity.Value.Body.PrettifyKql();
             }
-            foreach (var entity in database.MaterializedViews)
-            {
-                entity.Value.Query = entity.Value.Query.PrettifyKql();
-            }
-            foreach (var up in database.Tables.Values.Where(itm => itm.UpdatePolicies != null).SelectMany(itm => itm.UpdatePolicies))
+            foreach (var up in database.Tables.Values.Where(itm => itm.Policies?.UpdatePolicies != null).SelectMany(itm => itm.Policies.UpdatePolicies))
             {
                 up.Query = up.Query.PrettifyKql();
             }
