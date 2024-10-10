@@ -12,7 +12,7 @@ namespace KustoSchemaTools.Model
         public DateTime? Reference { get; set; }
 
         public string? SecondaryPartition { get; set; }
-        public PartitionAssignmentMode? PartirionAssignmentMode { get; set; }
+        public PartitionAssignmentModeEnum? PartitionAssignmentMode { get; set; }
         public int? MaxPartitionCount { get; set; }
         public DateTime? EffectiveDateTime { get; set; }
 
@@ -39,7 +39,7 @@ namespace KustoSchemaTools.Model
                 {
                     Function = "XxHash64",
                     MaxPartitionCount = MaxPartitionCount ?? 128,
-                    PartitionAssignmentMode = PartirionAssignmentMode ?? PartitionAssignmentMode.Default
+                    PartitionAssignmentMode = PartitionAssignmentMode ?? PartitionAssignmentModeEnum.Default
                 }
             };
 
@@ -60,7 +60,7 @@ namespace KustoSchemaTools.Model
             return new DatabaseScriptContainer("PartitioningPolicy", 50, $".alter {entity} {name} policy partitioning ```{JsonConvert.SerializeObject(policy, Formatting.None)}```");
         }
 
-        public enum PartitionAssignmentMode
+        public enum PartitionAssignmentModeEnum
         {
             /// <summary>
             /// The default assignment mode.
