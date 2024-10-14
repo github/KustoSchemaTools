@@ -30,7 +30,7 @@ namespace KustoSchemaTools.Model
             var asyncSetup = isNew && Backfill == true;
 
 
-            var excludedProperies = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity"]);
+            var excludedProperies = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity", "Policies"]);
             if (!asyncSetup)
             {
                 excludedProperies.Add("EffectiveDateTime");
