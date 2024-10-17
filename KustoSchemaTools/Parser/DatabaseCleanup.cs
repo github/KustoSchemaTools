@@ -72,6 +72,8 @@ namespace KustoSchemaTools.Parser
                     policy.RowLevelSecurity = entity.Value.RowLevelSecurity;
                 }
 
+                policy.RestrictedViewAccess |= entity.Value.RestrictedViewAccess;
+
                 if (policy.Retention == database.DefaultRetentionAndCache.Retention)
                 {
                     policy.Retention = null;
@@ -109,6 +111,7 @@ namespace KustoSchemaTools.Parser
                 {
                     policy.RowLevelSecurity = entity.Value.RowLevelSecurity;
                 }
+
 
                 if (policy.Retention == database.DefaultRetentionAndCache.Retention)
                 {

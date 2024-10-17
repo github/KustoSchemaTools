@@ -20,7 +20,9 @@ namespace KustoSchemaTools.Model
         public string DocString { get; set; }
         [Obsolete("Use policies instead")]
         public string? RowLevelSecurity { get; set; }
-                
+        [Obsolete("Use policies instead")]
+        public bool RestrictedViewAccess { get; set; } = false;
+
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var scripts = new List<DatabaseScriptContainer>();
