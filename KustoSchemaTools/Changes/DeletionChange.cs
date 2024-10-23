@@ -1,5 +1,7 @@
 ﻿using KustoSchemaTools.Parser;
 using System.Text;
+using Kusto.Language;
+
 
 namespace KustoSchemaTools.Changes
 {
