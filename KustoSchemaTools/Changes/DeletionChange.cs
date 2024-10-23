@@ -15,7 +15,17 @@ namespace KustoSchemaTools.Changes
 
         public string Entity { get; set; }
 
-        public List<DatabaseScriptContainer> Scripts => new List<DatabaseScriptContainer> { new DatabaseScriptContainer("Deletion", 0, $".drop {EntityType} {Entity}") };
+        public List<DatabaseScriptContainer> Scripts
+        {
+            get
+            {
+                var sc = new DatabaseScriptContainer("Deletion", 0, $".drop {EntityType} {Entity}");
+                var code = KustoCode.Parse(sc.Text);
+                var diagnostics = code.GetDiagnostics();
+                sc.IsValid = diagnostics.Any() == false;
+                return new List<DatabaseScriptContainer> { sc };
+            }
+        }
 
         public string Markdown
         {
