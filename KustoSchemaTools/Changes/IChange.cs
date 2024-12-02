@@ -8,6 +8,7 @@
         public List<DatabaseScriptContainer> Scripts { get; }
 
         public string Markdown { get; }
+        public string Cluster { get; }
 
     }
 

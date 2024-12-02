@@ -14,6 +14,7 @@
         public List<AADObject> Ingestors { get; set; } = new List<AADObject>();
         public List<AADObject> Admins { get; set; } = new List<AADObject>();
 
+        public Dictionary<string, FollowerDatabase> Followers { get; set; } = new Dictionary<string, FollowerDatabase>();
         public Dictionary<string, Table> Tables { get; set; } = new Dictionary<string, Table>();
 
         public Dictionary<string, MaterializedView> MaterializedViews { get; set; } = new Dictionary<string, MaterializedView>();

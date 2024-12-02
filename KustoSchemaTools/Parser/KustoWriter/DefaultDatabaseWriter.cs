@@ -12,13 +12,23 @@ namespace KustoSchemaTools.Parser.KustoWriter
         public async Task WriteAsync(Database sourceDb, Database targetDb, KustoClient client, ILogger logger)
         {
             var changes = DatabaseChanges.GenerateChanges(targetDb, sourceDb, targetDb.Name, logger);
-            var results = await ApplyChangesToDatabase(targetDb.Name, changes, client, logger);
 
-            foreach (var result in results)
+            var grouped = changes.GroupBy(itm => itm.Cluster).ToList();
+            var results = new List<ScriptExecuteCommandResult>();
+            foreach (var group in grouped)
             {
-                Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
-                Console.WriteLine("---------------------------------------------------------------------------");
+                var cluster = group.Key;
+                var clusterChanges = group.ToList();
+                var clusterClient = new KustoClient(cluster);
+                var clusterResults = await ApplyChangesToDatabase(targetDb.Name, clusterChanges, clusterClient, logger);
+                foreach (var result in clusterResults)
+                {
+                    Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
+                    Console.WriteLine("---------------------------------------------------------------------------");
+                }
+                results.AddRange(clusterResults);
             }
+
             var exs = results.Where(itm => itm.Result == "Failed").Select(itm => new Exception($"Execution failed for command \n{itm.CommandText} \n with reason\n{itm.Reason}")).ToList();
             if (exs.Count == 1)
             {

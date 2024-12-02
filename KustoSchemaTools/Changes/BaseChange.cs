@@ -23,6 +23,7 @@
         public string Markdown { get; protected set; }
 
         public bool IsAsync { get; set; }
+        public string Cluster { get; }
 
     }
 

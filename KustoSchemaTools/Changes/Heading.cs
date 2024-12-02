@@ -14,6 +14,7 @@
 
         public string Markdown => $"# {Entity}";
 
+        public string Cluster { get; }
     }
 
 }

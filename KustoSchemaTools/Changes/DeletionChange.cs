@@ -14,7 +14,7 @@ namespace KustoSchemaTools.Changes
         }
 
         public string EntityType { get; set; }
-
+        public string Cluster { get; }
         public string Entity { get; set; }
 
         public List<DatabaseScriptContainer> Scripts
