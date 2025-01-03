@@ -1,6 +1,8 @@
-﻿using KustoSchemaTools.Model;
+﻿using Kusto.Language;
+using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using System.Text;
 
 namespace KustoSchemaTools.Changes
 {
@@ -174,6 +176,133 @@ namespace KustoSchemaTools.Changes
             }
 
             return tmp;
+        }
+
+        public static List<IChange> GenerateFollowerChanges(FollowerDatabase oldState, FollowerDatabase newState, ILogger log)
+        {
+
+
+            List<IChange> result =
+            [
+                .. GenerateFollowerCachingChanges(oldState, newState, db => db.Tables, "Table", "table"),
+                .. GenerateFollowerCachingChanges(oldState, newState, db => db.MaterializedViews, "MV", "materialized-view"),
+
+            ];
+            if (oldState.Cache.DefaultHotCache != newState.Cache.DefaultHotCache)
+            {
+                if (newState.Cache.DefaultHotCache != null)
+                {
+                    result.Add(new BasicChange("FollowerDatabase", "ChangeDefaultHotCache", $"From {oldState.Cache.DefaultHotCache} to {newState.Cache.DefaultHotCache}", new List<DatabaseScriptContainer>
+                    {
+                        new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} policy caching hot = {newState.Cache.DefaultHotCache}", 0), "FollowerChangeDefaultHotCache")
+                    }));
+                }
+                else
+                {
+                    result.Add(new BasicChange("FollowerDatabase", "DeleteDefaultHotCache", $"Remove Default Hot Cache", new List<DatabaseScriptContainer>
+                    {
+                        new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName} policy caching", 0), "FollowerDeleteDefaultHotCache")
+                    }));
+                }
+            }
+
+            return result;
+
+
+
+            /*
+             *  public class FollowerDatabase 
+    {
+        public required string DatabaseName { get; set; }
+        public FollowerCache Cache { get; set; } = new FollowerCache();
+        public FollowerPermissions Permissions { get; set; } = new FollowerPermissions();
+    }
+
+    public class FollowerPermissions
+    {
+        public FollowerModificationKind? ModificationKind { get; set; }
+        public List<AADObject> Viewers { get; set; } = new List<AADObject>();
+        public List<AADObject> Admins { get; set; } = new List<AADObject>();
+    }
+
+    public class FollowerCache
+    {
+        public string? DefaultHotCache { get; set; }
+        public FollowerModificationKind? ModificationKind { get; set; }
+        public Dictionary<string, string> Tables { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> MaterializedViews { get; set; } = new Dictionary<string, string>();
+    }
+
+    public enum FollowerModificationKind
+    {
+        None,
+        Union,
+        Replace
+    }
+             */
+
+
+            return result;
+        }
+
+        private static List<IChange> GenerateFollowerCachingChanges(FollowerDatabase oldState, FollowerDatabase newState, Func<FollowerCache, Dictionary<string,string>> selector, string type, string kustoType)
+        {
+            var result = new List<IChange>();
+            var oldEntities = selector(oldState.Cache);
+            var newEntities = selector(newState.Cache);
+
+
+            var removedPolicyScripts = oldEntities.Keys.Except(newEntities.Keys)
+                .Select(itm =>
+                new
+                {
+                    Name = itm,
+                    Script = new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName} {kustoType} {itm} policy caching", 0), $"FollowerDelete{type}CachingPolicies")
+                })
+                .ToList();
+            var changedPolicyScripts = newEntities
+                    .Where(itm => oldEntities.ContainsKey(itm.Key) == false
+                                  || oldEntities[itm.Key] != itm.Value)
+                    .Select(itm => new
+                    {
+                        Name = itm.Key,
+                        From = oldEntities.ContainsKey(itm.Key) ? oldEntities[itm.Key] : "default",
+                        To = itm.Value,
+                        Script = new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} {kustoType} {itm.Key} policy caching hot = {itm.Value}", 0), $"FollowerChange{type}CachingPolicies")
+                    })
+                    .ToList();
+
+            if (removedPolicyScripts.Any())
+            {
+                result.Add(new Heading($"Deleted {type} Caching Policies"));
+
+                var deletedPolicies = string.Join("\n", removedPolicyScripts.Select(itm => $"* {itm.Name}"));
+
+                result.Add(new BasicChange(
+                    "FollowerDatabase",
+                    $"Delete{type}CachingPolicy",
+                    deletedPolicies,
+                    removedPolicyScripts.Select(itm => itm.Script).ToList()));
+            }
+            if (changedPolicyScripts.Any())
+            {
+                result.Add(new Heading($"Changed {type} Caching Policies"));
+
+                var changePolicies = new StringBuilder();
+                changePolicies.AppendLine($"{type} | From | To");
+                foreach (var change in changedPolicyScripts)
+                {
+                    changePolicies.AppendLine($"{change.Name} | {change.From} | {change.To}");
+                }
+
+                result.Add(new BasicChange(
+                    "FollowerDatabase",
+                    $"Change{type}CachingPolicy",
+                    changePolicies.ToString(),
+                    changedPolicyScripts.Select(itm => itm.Script).ToList()));
+            }
+
+            return result;
         }
     }
 

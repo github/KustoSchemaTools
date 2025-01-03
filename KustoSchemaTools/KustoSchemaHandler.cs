@@ -5,7 +5,9 @@ using KustoSchemaTools.Parser;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Data;
+using System.Diagnostics.Metrics;
 using System.Text;
+using System.Threading.Channels;
 
 namespace KustoSchemaTools
 {
@@ -65,6 +67,26 @@ namespace KustoSchemaTools
 
                 Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
             }
+
+            foreach(var follower in yamlDb.Followers)
+            {
+
+                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Cluster}/{databaseName}");
+
+
+
+
+
+                //var scriptSb = new StringBuilder();
+                //foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
+                //{
+                //    scriptSb.AppendLine(script.Text);
+                //}
+
+                //Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
+
+            }
+
             return (sb.ToString(), isValid);
         }
 
