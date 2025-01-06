@@ -188,6 +188,24 @@ namespace KustoSchemaTools.Changes
                 .. GenerateFollowerCachingChanges(oldState, newState, db => db.MaterializedViews, "MV", "materialized-view"),
 
             ];
+
+            if (oldState.Permissions.ModificationKind != newState.Permissions.ModificationKind)
+            {
+                var kind = newState.Permissions.ModificationKind.ToString().ToLower();
+                result.Add(new BasicChange("FollowerDatabase", "PermissionsModificationKind", $"From {oldState.Permissions.ModificationKind} to {newState.Permissions.ModificationKind}", new List<DatabaseScriptContainer>
+                {
+                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} principals-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
+                }));
+            }
+            if (oldState.Cache.ModificationKind != newState.Cache.ModificationKind)
+            {
+                var kind = newState.Cache.ModificationKind.ToString().ToLower();
+                result.Add(new BasicChange("FollowerDatabase", "ChangeModificationKind", $"From {oldState.Cache.ModificationKind} to {newState.Cache.ModificationKind}", new List<DatabaseScriptContainer>
+                {
+                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} caching-policies-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
+                }));
+            }
+
             if (oldState.Cache.DefaultHotCache != newState.Cache.DefaultHotCache)
             {
                 if (newState.Cache.DefaultHotCache != null)
@@ -208,41 +226,6 @@ namespace KustoSchemaTools.Changes
 
             return result;
 
-
-
-            /*
-             *  public class FollowerDatabase 
-    {
-        public required string DatabaseName { get; set; }
-        public FollowerCache Cache { get; set; } = new FollowerCache();
-        public FollowerPermissions Permissions { get; set; } = new FollowerPermissions();
-    }
-
-    public class FollowerPermissions
-    {
-        public FollowerModificationKind? ModificationKind { get; set; }
-        public List<AADObject> Viewers { get; set; } = new List<AADObject>();
-        public List<AADObject> Admins { get; set; } = new List<AADObject>();
-    }
-
-    public class FollowerCache
-    {
-        public string? DefaultHotCache { get; set; }
-        public FollowerModificationKind? ModificationKind { get; set; }
-        public Dictionary<string, string> Tables { get; set; } = new Dictionary<string, string>();
-        public Dictionary<string, string> MaterializedViews { get; set; } = new Dictionary<string, string>();
-    }
-
-    public enum FollowerModificationKind
-    {
-        None,
-        Union,
-        Replace
-    }
-             */
-
-
-            return result;
         }
 
         private static List<IChange> GenerateFollowerCachingChanges(FollowerDatabase oldState, FollowerDatabase newState, Func<FollowerCache, Dictionary<string,string>> selector, string type, string kustoType)
