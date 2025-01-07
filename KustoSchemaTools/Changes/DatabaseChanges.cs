@@ -262,14 +262,17 @@ namespace KustoSchemaTools.Changes
 
             if (removedPolicyScripts.Any())
             {
-                result.Add(new Heading($"Deleted {type} Caching Policies"));
-
-                var deletedPolicies = string.Join("\n", removedPolicyScripts.Select(itm => $"* {itm.Name}"));
+                var deletePolicySb = new StringBuilder();
+                deletePolicySb.AppendLine($"## Delete {type} Caching Policies");
+                foreach (var change in removedPolicyScripts)
+                {
+                    deletePolicySb.AppendLine($"* {change.Name}");
+                }
 
                 result.Add(new BasicChange(
                     "FollowerDatabase",
                     $"Delete{type}CachingPolicy",
-                    deletedPolicies,
+                    deletePolicySb.ToString(),
                     removedPolicyScripts.Select(itm => itm.Script).ToList()));
             }
             if (changedPolicyScripts.Any())
