@@ -2,8 +2,9 @@
 {
     public class FollowerDatabase 
     {
-        public required string DatabaseName { get; set; }
-        public FollowerCache Cache { get; set; } = new FollowerCache();        
+        public string DatabaseName { get; set; }
+        public FollowerCache Cache { get; set; } = new FollowerCache();
+        // TODO: No logic to load data / roll out changes implemented yet!
         public FollowerPermissions Permissions { get; set; } = new FollowerPermissions();
     }
 

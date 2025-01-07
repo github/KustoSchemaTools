@@ -1,6 +1,7 @@
 ﻿using Kusto.Data;
 using KustoSchemaTools.Changes;
 using KustoSchemaTools.Model;
+using KustoSchemaTools.Parser.KustoLoader;
 using KustoSchemaTools.Plugins;
 using Microsoft.Extensions.Logging;
 using System.Text;
@@ -19,14 +20,39 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
                 Console.WriteLine("---------------------------------------------------------------------------");
             }
-            var exs = results.Where(itm => itm.Result == "Failed").Select(itm => new Exception($"Execution failed for command \n{itm.CommandText} \n with reason\n{itm.Reason}")).ToList();
-            if (exs.Count == 1)
+
+            foreach (var follower in targetDb.Followers)
             {
-                throw exs[0];
-            }
-            if (exs.Count > 1)
-            {
-                throw new AggregateException(exs);
+                var followerClient = new KustoClient(follower.Key);
+                var source = FollowerLoader.LoadFollower(follower.Value.DatabaseName, followerClient);
+
+                var followerChanges = DatabaseChanges.GenerateFollowerChanges(source, follower.Value, logger);
+
+                var followerResults = await ApplyChangesToDatabase(follower.Value.DatabaseName, followerChanges, followerClient, logger);
+
+                Console.WriteLine();
+                Console.WriteLine($"Follower: {follower.Key}");
+                Console.WriteLine("---------------------------------------------------------------------------");
+                Console.WriteLine();
+
+                foreach (var result in followerResults)
+                {
+                    Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
+                    Console.WriteLine("---------------------------------------------------------------------------");
+                }
+
+                Console.WriteLine();
+                Console.WriteLine();
+
+                var exs = results.Where(itm => itm.Result == "Failed").Select(itm => new Exception($"Execution failed for command \n{itm.CommandText} \n with reason\n{itm.Reason}")).ToList();
+                if (exs.Count == 1)
+                {
+                    throw exs[0];
+                }
+                if (exs.Count > 1)
+                {
+                    throw new AggregateException(exs);
+                }
             }
         }
 

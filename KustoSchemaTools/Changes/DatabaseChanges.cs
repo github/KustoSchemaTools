@@ -180,8 +180,6 @@ namespace KustoSchemaTools.Changes
 
         public static List<IChange> GenerateFollowerChanges(FollowerDatabase oldState, FollowerDatabase newState, ILogger log)
         {
-
-
             List<IChange> result =
             [
                 .. GenerateFollowerCachingChanges(oldState, newState, db => db.Tables, "Table", "table"),
@@ -192,7 +190,7 @@ namespace KustoSchemaTools.Changes
             if (oldState.Permissions.ModificationKind != newState.Permissions.ModificationKind)
             {
                 var kind = newState.Permissions.ModificationKind.ToString().ToLower();
-                result.Add(new BasicChange("FollowerDatabase", "PermissionsModificationKind", $"From {oldState.Permissions.ModificationKind} to {newState.Permissions.ModificationKind}", new List<DatabaseScriptContainer>
+                result.Add(new BasicChange("FollowerDatabase", "PermissionsModificationKind", $" Change Permission-Modification-Kind from {oldState.Permissions.ModificationKind} to {newState.Permissions.ModificationKind}", new List<DatabaseScriptContainer>
                 {
                     new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} principals-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
                 }));
@@ -200,7 +198,7 @@ namespace KustoSchemaTools.Changes
             if (oldState.Cache.ModificationKind != newState.Cache.ModificationKind)
             {
                 var kind = newState.Cache.ModificationKind.ToString().ToLower();
-                result.Add(new BasicChange("FollowerDatabase", "ChangeModificationKind", $"From {oldState.Cache.ModificationKind} to {newState.Cache.ModificationKind}", new List<DatabaseScriptContainer>
+                result.Add(new BasicChange("FollowerDatabase", "ChangeModificationKind", $"Change Caching-Modification-Kind from {oldState.Cache.ModificationKind} to {newState.Cache.ModificationKind}", new List<DatabaseScriptContainer>
                 {
                     new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} caching-policies-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
                 }));
@@ -269,10 +267,10 @@ namespace KustoSchemaTools.Changes
             }
             if (changedPolicyScripts.Any())
             {
-                result.Add(new Heading($"Changed {type} Caching Policies"));
-
                 var changePolicies = new StringBuilder();
+                changePolicies.AppendLine($"## Changed {type} Caching Policies");
                 changePolicies.AppendLine($"{type} | From | To");
+                changePolicies.AppendLine("--|--|--");
                 foreach (var change in changedPolicyScripts)
                 {
                     changePolicies.AppendLine($"{change.Name} | {change.From} | {change.To}");

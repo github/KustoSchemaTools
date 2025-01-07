@@ -2,6 +2,7 @@
 using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
+using KustoSchemaTools.Parser.KustoLoader;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Data;
@@ -71,22 +72,24 @@ namespace KustoSchemaTools
             foreach(var follower in yamlDb.Followers)
             {
 
-                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Cluster}/{databaseName}");
+                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Key}/{databaseName}");
 
 
+                var followerClient = new KustoClient(follower.Key);
+                var oldModel = FollowerLoader.LoadFollower(follower.Value.DatabaseName, followerClient);
 
+                var newModel = follower.Value;
 
+                var changes = DatabaseChanges.GenerateFollowerChanges(oldModel, newModel, Log);
 
-                //var scriptSb = new StringBuilder();
-                //foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
-                //{
-                //    scriptSb.AppendLine(script.Text);
-                //}
-
-                //Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
-
+                sb.AppendLine($"# Changes for follower database {follower.Key}/{databaseName}");
+                sb.AppendLine();
+                foreach (var change in changes)
+                {
+                    sb.AppendLine(change.Markdown);
+                    sb.AppendLine();                    
+                }
             }
-
             return (sb.ToString(), isValid);
         }
 
