@@ -21,7 +21,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 Console.WriteLine("---------------------------------------------------------------------------");
             }
 
-            foreach (var follower in targetDb.Followers)
+            foreach (var follower in sourceDb.Followers)
             {
                 var followerClient = new KustoClient(follower.Key);
                 var source = FollowerLoader.LoadFollower(follower.Value.DatabaseName, followerClient);
