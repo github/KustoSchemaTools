@@ -2,10 +2,13 @@
 using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
+using KustoSchemaTools.Parser.KustoLoader;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Data;
+using System.Diagnostics.Metrics;
 using System.Text;
+using System.Threading.Channels;
 
 namespace KustoSchemaTools
 {
@@ -64,6 +67,28 @@ namespace KustoSchemaTools
                 }
 
                 Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
+            }
+
+            foreach(var follower in yamlDb.Followers)
+            {
+
+                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Key}/{databaseName}");
+
+
+                var followerClient = new KustoClient(follower.Key);
+                var oldModel = FollowerLoader.LoadFollower(follower.Value.DatabaseName, followerClient);
+
+                var newModel = follower.Value;
+
+                var changes = DatabaseChanges.GenerateFollowerChanges(oldModel, newModel, Log);
+
+                sb.AppendLine($"# Changes for follower database {follower.Key}/{databaseName}");
+                sb.AppendLine();
+                foreach (var change in changes)
+                {
+                    sb.AppendLine(change.Markdown);
+                    sb.AppendLine();                    
+                }
             }
             return (sb.ToString(), isValid);
         }

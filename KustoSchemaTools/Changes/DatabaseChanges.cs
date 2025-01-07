@@ -1,6 +1,8 @@
-﻿using KustoSchemaTools.Model;
+﻿using Kusto.Language;
+using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using System.Data;
+using System.Text;
 
 namespace KustoSchemaTools.Changes
 {
@@ -174,6 +176,124 @@ namespace KustoSchemaTools.Changes
             }
 
             return tmp;
+        }
+
+        public static List<IChange> GenerateFollowerChanges(FollowerDatabase oldState, FollowerDatabase newState, ILogger log)
+        {
+            List<IChange> result =
+            [
+                .. GenerateFollowerCachingChanges(oldState, newState, db => db.Tables, "Table", "table"),
+                .. GenerateFollowerCachingChanges(oldState, newState, db => db.MaterializedViews, "MV", "materialized-view"),
+
+            ];
+
+            if (oldState.Permissions.ModificationKind != newState.Permissions.ModificationKind)
+            {
+                var kind = newState.Permissions.ModificationKind.ToString().ToLower();
+                result.Add(new BasicChange("FollowerDatabase", "PermissionsModificationKind", $" Change Permission-Modification-Kind from {oldState.Permissions.ModificationKind} to {newState.Permissions.ModificationKind}", new List<DatabaseScriptContainer>
+                {
+                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} principals-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
+                }));
+            }
+            if (oldState.Cache.ModificationKind != newState.Cache.ModificationKind)
+            {
+                var kind = newState.Cache.ModificationKind.ToString().ToLower();
+                result.Add(new BasicChange("FollowerDatabase", "ChangeModificationKind", $"Change Caching-Modification-Kind from {oldState.Cache.ModificationKind} to {newState.Cache.ModificationKind}", new List<DatabaseScriptContainer>
+                {
+                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} caching-policies-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
+                }));
+            }
+
+            if (oldState.Cache.DefaultHotCache != newState.Cache.DefaultHotCache)
+            {
+                if (newState.Cache.DefaultHotCache != null)
+                {
+                    result.Add(new BasicChange("FollowerDatabase", "ChangeDefaultHotCache", $"From {oldState.Cache.DefaultHotCache} to {newState.Cache.DefaultHotCache}", new List<DatabaseScriptContainer>
+                    {
+                        new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} policy caching hot = {newState.Cache.DefaultHotCache}", 0), "FollowerChangeDefaultHotCache")
+                    }));
+                }
+                else
+                {
+                    result.Add(new BasicChange("FollowerDatabase", "DeleteDefaultHotCache", $"Remove Default Hot Cache", new List<DatabaseScriptContainer>
+                    {
+                        new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName} policy caching", 0), "FollowerDeleteDefaultHotCache")
+                    }));
+                }
+            }
+
+            foreach(var script in result.SelectMany(itm => itm.Scripts))
+            {
+                var code = KustoCode.Parse(script.Text);
+                var diagnostics = code.GetDiagnostics();
+                script.IsValid = diagnostics.Any() == false;
+            }
+
+            return result;
+
+        }
+
+        private static List<IChange> GenerateFollowerCachingChanges(FollowerDatabase oldState, FollowerDatabase newState, Func<FollowerCache, Dictionary<string,string>> selector, string type, string kustoType)
+        {
+            var result = new List<IChange>();
+            var oldEntities = selector(oldState.Cache);
+            var newEntities = selector(newState.Cache);
+
+
+            var removedPolicyScripts = oldEntities.Keys.Except(newEntities.Keys)
+                .Select(itm =>
+                new
+                {
+                    Name = itm,
+                    Script = new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName} {kustoType} {itm} policy caching", 0), $"FollowerDelete{type}CachingPolicies")
+                })
+                .ToList();
+            var changedPolicyScripts = newEntities
+                    .Where(itm => oldEntities.ContainsKey(itm.Key) == false
+                                  || oldEntities[itm.Key] != itm.Value)
+                    .Select(itm => new
+                    {
+                        Name = itm.Key,
+                        From = oldEntities.ContainsKey(itm.Key) ? oldEntities[itm.Key] : "default",
+                        To = itm.Value,
+                        Script = new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} {kustoType} {itm.Key} policy caching hot = {itm.Value}", 0), $"FollowerChange{type}CachingPolicies")
+                    })
+                    .ToList();
+
+            if (removedPolicyScripts.Any())
+            {
+                var deletePolicySb = new StringBuilder();
+                deletePolicySb.AppendLine($"## Delete {type} Caching Policies");
+                foreach (var change in removedPolicyScripts)
+                {
+                    deletePolicySb.AppendLine($"* {change.Name}");
+                }
+
+                result.Add(new BasicChange(
+                    "FollowerDatabase",
+                    $"Delete{type}CachingPolicy",
+                    deletePolicySb.ToString(),
+                    removedPolicyScripts.Select(itm => itm.Script).ToList()));
+            }
+            if (changedPolicyScripts.Any())
+            {
+                var changePolicies = new StringBuilder();
+                changePolicies.AppendLine($"## Changed {type} Caching Policies");
+                changePolicies.AppendLine($"{type} | From | To");
+                changePolicies.AppendLine("--|--|--");
+                foreach (var change in changedPolicyScripts)
+                {
+                    changePolicies.AppendLine($"{change.Name} | {change.From} | {change.To}");
+                }
+
+                result.Add(new BasicChange(
+                    "FollowerDatabase",
+                    $"Change{type}CachingPolicy",
+                    changePolicies.ToString(),
+                    changedPolicyScripts.Select(itm => itm.Script).ToList()));
+            }
+
+            return result;
         }
     }
 

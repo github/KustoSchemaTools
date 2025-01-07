@@ -1,4 +1,7 @@
-﻿namespace KustoSchemaTools.Model
+﻿using KustoSchemaTools.Changes;
+using System.Diagnostics.CodeAnalysis;
+
+namespace KustoSchemaTools.Model
 {
     public class Database
     {
@@ -31,6 +34,7 @@
 
         public Deletions Deletions { get; set; } = new Deletions();
 
-    }
+        public Dictionary<string, FollowerDatabase> Followers { get; set; } = new Dictionary<string, FollowerDatabase>();
 
+    }
 }
