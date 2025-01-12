@@ -2,7 +2,7 @@
 
 This C# project provides functionality to work with schemas in Azure Data Explorer (Kusto). You can load a schema from yaml files or a database to the interal data structure. This can be used for creating diffs of two databases as scripts or markdown, and also to write it back to files or update schemas in a database.
 
-A second project "[KustoSchemaToolsAction](https://github.com/github/KustoSchemaToolsAction)" wraps that into CLI tool inside a docker container for usage in GitHub Actions.
+A second project "[KustoSchemaToolsAction](https://github.com/github/KustoSchemaToolsAction)" wraps that into a CLI tool inside a docker container for usage in GitHub Actions.
 
 ## Getting started
 
