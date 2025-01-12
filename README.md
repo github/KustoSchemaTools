@@ -63,7 +63,7 @@ Currently following features are supported:
     * Storage / Delta / SQL
     * Folder
     * Docstring
-* Continous Exports
+* Continuous Exports
 * Entity Groups
 * Deleting existing items using deletions in the database definition
     * Tables
@@ -71,6 +71,6 @@ Currently following features are supported:
     * Functions
     * Materialized Views
     * Extenal Tables
-    * Continous Exports
+    * Continuous Exports
 
-The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies,materialized views and continous exports.
+The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies,materialized views and continuous exports.
