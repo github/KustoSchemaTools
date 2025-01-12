@@ -30,7 +30,7 @@ var yamlFactory = new YamlDatabaseHandlerFactory()
     .WithPlugin<DatabaseCleanup>();
 ```
 
-Additional features can be added with custom plugins. A sample for `table groups`, where some parts of the schema are defined once, but is applied for several tables can be found in [here](https://github.com/github/KustoSchemaToolsAction/blob/main/KustoSchemaCLI/Plugins/TableGroupPlugin.cs).
+Additional features can be added with custom plugins. A sample for `table groups`, where some parts of the schema are defined once, but are applied for several tables can be found in [here](https://github.com/github/KustoSchemaToolsAction/blob/main/KustoSchemaCLI/Plugins/TableGroupPlugin.cs).
 
 The `KustoSchemaHandler` is the central place for synching schemas between yaml and a database. It offers functions for generating changes formatted in markdown, writing a database to yaml files and applying changes from yaml files to a database.
 
