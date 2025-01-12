@@ -20,7 +20,7 @@ var dbFactory = new KustoDatabaseHandlerFactory(sp.GetService<ILogger<KustoDatab
 
 
 
- For syncrhonizing it to files, the `YamlDatabaseHandler` and the `YamlDatabaseHandlerFactory` are the right tools. To prevent super large files, there are plugins that handle reading and writing functions, tables and materialized views to separate files and folders. They can be configured for the `YamlDatabaseHandlerFactory`.
+ For synchronizing it to files, the `YamlDatabaseHandler` and the `YamlDatabaseHandlerFactory` are the right tools. To prevent super large files, there are plugins that handle reading and writing functions, tables and materialized views to separate files and folders. They can be configured for the `YamlDatabaseHandlerFactory`.
 
 ```csharp
 var yamlFactory = new YamlDatabaseHandlerFactory()
