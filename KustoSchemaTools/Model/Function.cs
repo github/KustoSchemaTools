@@ -22,7 +22,7 @@ namespace KustoSchemaTools.Model
         {
             var properties = GetType().GetProperties()
                 .Where(p => p.GetValue(this) != null && p.Name != "Body" && p.Name != "Parameters")
-                .Select(p => $"{p.Name}=\"{p.GetValue(this)}\"");
+                .Select(p => $"{p.Name}=```{p.GetValue(this)}```");
             var propertiesString = string.Join(", ", properties);
 
             var parameters = Parameters;

@@ -30,7 +30,7 @@ namespace KustoSchemaTools.Model
             {
                 var properties = string.Join(", ", GetType().GetProperties()
                     .Where(p => p.GetValue(this) != null && (p.Name == "Folder" || p.Name == "DocString"))
-                    .Select(p => $"{p.Name}=\"{p.GetValue(this)}\""));
+                    .Select(p => $"{p.Name}=```{p.GetValue(this)}```"));
 
                 scripts.Add(new DatabaseScriptContainer("CreateMergeTable", 30, $".create-merge table {name} ({string.Join(", ", Columns.Select(c => $"{c.Key.BracketIfIdentifier()}:{c.Value}"))})"));
             }
