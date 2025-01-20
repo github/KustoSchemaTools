@@ -2,11 +2,11 @@
 
 This C# project provides functionality to work with schemas in Azure Data Explorer (Kusto). You can load a schema from yaml files or a database to the interal data structure. This can be used for creating diffs of two databases as scripts or markdown, and also to write it back to files or update schemas in a database.
 
-A second project "[KustoSchemaToolsAction](https://github.com/github/KustoSchemaToolsAction)" wraps that into CLI tool inside a docker container for usage in GitHub Actions.
+A second project "[KustoSchemaToolsAction](https://github.com/github/KustoSchemaToolsAction)" wraps that into a CLI tool inside a docker container for usage in GitHub Actions.
 
 ## Getting started
 
-The `database` object holds all schema related information for a Kusto database. It can be loaded from, or written to a cluster using the `KustoDatabaseHandler` which can be created by the `KustoDatabaseHandlerFactory`.There are several steps involved for loading a all relevant information from a kusto database into the `database` object. These are covered by different plugins, which can be configured for the `KustoDatabaseHandlerFactory`. 
+The `database` object holds all schema related information for a Kusto database. It can be loaded from, or written to a cluster using the `KustoDatabaseHandler` which can be created by the `KustoDatabaseHandlerFactory`. There are several steps involved for loading all relevant information from a kusto database into the `database` object. These are covered by different plugins, which can be configured for the `KustoDatabaseHandlerFactory`. 
 
 ```csharp
 var dbFactory = new KustoDatabaseHandlerFactory(sp.GetService<ILogger<KustoDatabaseHandler>>())
@@ -20,7 +20,7 @@ var dbFactory = new KustoDatabaseHandlerFactory(sp.GetService<ILogger<KustoDatab
 
 
 
- For syncrhonizing it to files, the `YamlDatabaseHandler` and the `YamlDatabaseHandlerFactory` are the right tools. To prevent super large files, there are plugins that handle reading and writing functions, tables and materialized views to separate files and folders. They can be configured for the `YamlDatabaseHandlerFactory`.
+ For synchronizing it to files, the `YamlDatabaseHandler` and the `YamlDatabaseHandlerFactory` are the right tools. To prevent super large files, there are plugins that handle reading and writing functions, tables and materialized views to separate files and folders. They can be configured for the `YamlDatabaseHandlerFactory`.
 
 ```csharp
 var yamlFactory = new YamlDatabaseHandlerFactory()
@@ -30,7 +30,7 @@ var yamlFactory = new YamlDatabaseHandlerFactory()
     .WithPlugin<DatabaseCleanup>();
 ```
 
-Additional features can be added with custom plugins. A sample for `table groups`, where the some parts of the schema are defined once, but is applied for several tables can be found in [here](https://github.com/github/KustoSchemaToolsAction/blob/main/KustoSchemaCLI/Plugins/TableGroupPlugin.cs).
+Additional features can be added with custom plugins. A sample for `table groups`, where some parts of the schema are defined once, but are applied for several tables can be found in [here](https://github.com/github/KustoSchemaToolsAction/blob/main/KustoSchemaCLI/Plugins/TableGroupPlugin.cs).
 
 The `KustoSchemaHandler` is the central place for synching schemas between yaml and a database. It offers functions for generating changes formatted in markdown, writing a database to yaml files and applying changes from yaml files to a database.
 
@@ -63,7 +63,7 @@ Currently following features are supported:
     * Storage / Delta / SQL
     * Folder
     * Docstring
-* Continous Exports
+* Continuous Exports
 * Entity Groups
 * Deleting existing items using deletions in the database definition
     * Tables
@@ -71,6 +71,6 @@ Currently following features are supported:
     * Functions
     * Materialized Views
     * Extenal Tables
-    * Continous Exports
+    * Continuous Exports
 
-The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies,materialized views and continous exports.
+The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies, materialized views and continuous exports.
