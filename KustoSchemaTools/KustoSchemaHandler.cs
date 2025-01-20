@@ -36,17 +36,20 @@ namespace KustoSchemaTools
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
             var yamlDb = await yamlHandler.LoadAsync();
 
+            var escapedDbName = databaseName.BracketIfIdentifier();
+
+
             foreach (var cluster in clusters.Connections)
             {
-                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
+                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
 
-                var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
+                var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, escapedDbName);
                 var kustoDb = await dbHandler.LoadAsync();
-                var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, databaseName, Log);
+                var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, escapedDbName, Log);
 
                 isValid &= changes.All(itm => itm.Scripts.All(itm => itm.IsValid != false));
 
-                sb.AppendLine($"# {cluster.Name}/{databaseName} ({cluster.Url})");
+                sb.AppendLine($"# {cluster.Name}/{escapedDbName} ({cluster.Url})");
 
                 if(changes.Count == 0)
                 {
@@ -72,7 +75,7 @@ namespace KustoSchemaTools
             foreach(var follower in yamlDb.Followers)
             {
 
-                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Key}/{databaseName}");
+                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Key}/{follower.Value.DatabaseName}");
 
 
                 var followerClient = new KustoClient(follower.Key);
@@ -82,7 +85,7 @@ namespace KustoSchemaTools
 
                 var changes = DatabaseChanges.GenerateFollowerChanges(oldModel, newModel, Log);
 
-                sb.AppendLine($"# Changes for follower database {follower.Key}/{databaseName}");
+                sb.AppendLine($"# Changes for follower database {follower.Key}/{follower.Value.DatabaseName}");
                 sb.AppendLine();
                 foreach (var change in changes)
                 {
@@ -98,7 +101,8 @@ namespace KustoSchemaTools
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
-            var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, databaseName);
+            var escapedDbName = databaseName.BracketIfIdentifier();
+            var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, escapedDbName);
 
             var db = await dbHandler.LoadAsync();
             if (includeColumns == false)
@@ -119,6 +123,7 @@ namespace KustoSchemaTools
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
+            var escapedDbName = databaseName.BracketIfIdentifier();
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
             var yamlDb = await yamlHandler.LoadAsync();
 
@@ -128,8 +133,8 @@ namespace KustoSchemaTools
             {
                 try
                 {
-                    Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
-                    var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
+                    Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
+                    var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, escapedDbName);
                     await dbHandler.WriteAsync(yamlDb);
                     results.TryAdd(cluster.Url, null);
                 }

@@ -42,7 +42,7 @@ namespace KustoSchemaTools.Model
                 .Where(p => p.GetValue(this) != null && excludedProperies.Contains(p.Name) == false)
                 .Select(p => new {Name = p.Name, Value = p.GetValue(this) })
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
-                .Select(p => $"{p.Name}=\"{p.Value}\""));
+                .Select(p => $"{p.Name}=```{p.Value}```"));
 
   
             if (asyncSetup)
