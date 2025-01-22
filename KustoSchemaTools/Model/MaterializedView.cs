@@ -30,16 +30,16 @@ namespace KustoSchemaTools.Model
             var asyncSetup = isNew && Backfill == true;
 
 
-            var excludedProperies = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity", "Policies"]);
+            var excludedProperties = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity", "Policies"]);
             if (!asyncSetup)
             {
-                excludedProperies.Add("EffectiveDateTime");
-                excludedProperies.Add("Backfill");
+                excludedProperties.Add("EffectiveDateTime");
+                excludedProperties.Add("Backfill");
             }
 
             var scripts = new List<DatabaseScriptContainer>();
             var properties = string.Join(", ", GetType().GetProperties()
-                .Where(p => p.GetValue(this) != null && excludedProperies.Contains(p.Name) == false)
+                .Where(p => p.GetValue(this) != null && excludedProperties.Contains(p.Name) == false)
                 .Select(p => new {Name = p.Name, Value = p.GetValue(this) })
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
                 .Select(p => $"{p.Name}=```{p.Value}```"));
