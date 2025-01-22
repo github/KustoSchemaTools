@@ -1,4 +1,5 @@
-﻿using Kusto.Language;
+﻿using Kusto.Cloud.Platform.Utils;
+using Kusto.Language;
 using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using System.Data;
@@ -47,7 +48,43 @@ namespace KustoSchemaTools.Changes
             result.AddRange(GenerateDeletions(oldState, newState.Deletions, log));
 
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log, (oldItem, newItem) => oldItem != null || newItem.Columns?.Any() == true));
-            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log));
+            var mvChanges = GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log);
+            foreach(var mvChange in mvChanges)
+            {                                
+                var relevantChange = mvChange.Scripts.FirstOrDefault(itm => itm.Kind== "CreateMaterializedViewAsync");
+                if (relevantChange == null) 
+                    continue;
+
+
+                var newMv = newState.MaterializedViews[mvChange.Entity];
+
+                var specificCache = (newMv.Kind== "table" ?
+                    (newState.Tables.ContainsKey(newMv.Source) ? newState.Tables[newMv.Source].Policies?.HotCache : null) :
+                    (newState.MaterializedViews.ContainsKey(newMv.Source) ? newState.MaterializedViews[newMv.Source].Policies?.HotCache : null))
+                    ?? newState.DefaultRetentionAndCache?.HotCache;
+
+                if(specificCache != null && specificCache.EndsWith("d") && int.TryParse(specificCache.TrimEnd("d"), out int lookBackInDays) && DateTime.TryParse(newMv.EffectiveDateTime, out var effectiveDateTime))
+                {
+                    if(DateTime.UtcNow.AddDays(-lookBackInDays) < effectiveDateTime)
+                    {
+                        // Backfill will work
+                        var validUntil = effectiveDateTime.AddDays(lookBackInDays);
+                        mvChange.Comment = new Comment { FailsRollout = false, Kind = CommentKind.Note, Text = $"The materialized view {mvChange.Entity} is created with backfill configured. All required data is available in hot cache and the rollout is expected to succeed as long as it is rolled out before {validUntil:yyyy-MM-dd HH:mm}UTC. The rollout is executed asynchronusly, depending on the size of the backfill it might take a while." };
+                    }
+                    else
+                    {
+                        // Backfill will fail
+                        var validUntil = DateTime.UtcNow.Date.AddDays(1-lookBackInDays);
+                        mvChange.Comment = new Comment { FailsRollout = true, Kind = CommentKind.Caution, Text = $"Not all data for the backfill of {mvChange.Entity} is available hot. The backfill will fail! Please set the effective Date of the MV to {validUntil:yyyy-MM-dd} or newer." };
+                    }
+                }
+                else
+                {
+                    mvChange.Comment = new Comment { FailsRollout = false, Kind = CommentKind.Warning, Text = $"The conditions for backfilling {mvChange.Entity} couldn't be validated. Please check for errors!" };
+                }
+            }            
+
+            result.AddRange(mvChanges);
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.ContinuousExports), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Functions, nameof(newState.Functions), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ExternalTables, nameof(newState.ExternalTables), log));
@@ -62,7 +99,6 @@ namespace KustoSchemaTools.Changes
                     result.AddRange(changes);
                 }
             }
-
 
             return result;
         }

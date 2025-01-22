@@ -9,6 +9,7 @@
 
         public string Markdown { get; }
 
-    }
+        public Comment Comment { get; set; }
 
+    }
 }

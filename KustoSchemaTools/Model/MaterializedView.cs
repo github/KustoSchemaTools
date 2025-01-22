@@ -47,11 +47,11 @@ namespace KustoSchemaTools.Model
   
             if (asyncSetup)
             {
-                scripts.Add(new DatabaseScriptContainer("CreateMaterializedView", Kind == "table" ? 40 : 41, $".create async ifnotexists materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}", true));
+                scripts.Add(new DatabaseScriptContainer("CreateMaterializedViewAsync", Kind == "table" ? 40 : 41, $".create async ifnotexists materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}", true));
             }
             else
             {
-                scripts.Add(new DatabaseScriptContainer("CreateMaterializedView", Kind == "table" ? 40 : 41, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
+                scripts.Add(new DatabaseScriptContainer("CreateAlterMaterializedView", Kind == "table" ? 40 : 41, $".create-or-alter materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}"));
             }
             if (Policies != null)
             {
