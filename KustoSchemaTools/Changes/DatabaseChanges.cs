@@ -69,7 +69,7 @@ namespace KustoSchemaTools.Changes
                     {
                         // Backfill will work
                         var validUntil = effectiveDateTime.AddDays(lookBackInDays);
-                        mvChange.Comment = new Comment { FailsRollout = false, Kind = CommentKind.Note, Text = $"The materialized view {mvChange.Entity} is created with backfill configured. All required data is available in hot cache and the rollout is expected to succeed as long as it is rolled out before {validUntil:yyyy-MM-dd HH:mm}UTC. The rollout is executed asynchronusly, depending on the size of the backfill it might take a while." };
+                        mvChange.Comment = new Comment { FailsRollout = false, Kind = CommentKind.Note, Text = $"The materialized view {mvChange.Entity} is specified to be created with backfill configured. All required data is available in hot cache and the rollout is expected to succeed as long as it is rolled out before {validUntil:yyyy-MM-dd HH:mm}UTC. The rollout will be executed asynchronously, depending on the size of the backfill it might take a while." };
                     }
                     else
                     {
