@@ -25,5 +25,6 @@ namespace KustoSchemaTools.Changes
 
         public List<DatabaseScriptContainer> Scripts { get; set; }
 
+        public Comment Comment { get; set; }
     }
 }

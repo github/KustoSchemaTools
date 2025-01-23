@@ -13,6 +13,7 @@
         public List<DatabaseScriptContainer> Scripts => new List<DatabaseScriptContainer> { };
 
         public string Markdown => $"# {Entity}";
+        public Comment Comment { get; set; }
 
     }
 
