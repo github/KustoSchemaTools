@@ -29,6 +29,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 var followerChanges = DatabaseChanges.GenerateFollowerChanges(source, follower.Value, logger);
 
                 var followerResults = await ApplyChangesToDatabase(follower.Value.DatabaseName, followerChanges, followerClient, logger);
+                results.AddRange(followerResults);
 
                 Console.WriteLine();
                 Console.WriteLine($"Follower: {follower.Key}");
@@ -44,15 +45,15 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 Console.WriteLine();
                 Console.WriteLine();
 
-                var exs = results.Where(itm => itm.Result == "Failed").Select(itm => new Exception($"Execution failed for command \n{itm.CommandText} \n with reason\n{itm.Reason}")).ToList();
-                if (exs.Count == 1)
-                {
-                    throw exs[0];
-                }
-                if (exs.Count > 1)
-                {
-                    throw new AggregateException(exs);
-                }
+            }
+            var exs = results.Where(itm => itm.Result == "Failed").Select(itm => new Exception($"Execution failed for command \n{itm.CommandText} \n with reason\n{itm.Reason}")).ToList();
+            if (exs.Count == 1)
+            {
+                throw exs[0];
+            }
+            if (exs.Count > 1)
+            {
+                throw new AggregateException(exs);
             }
         }
 
