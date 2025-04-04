@@ -25,11 +25,26 @@ namespace KustoSchemaTools
         public YamlDatabaseHandlerFactory<T> YamlDatabaseHandlerFactory { get; }
         public KustoDatabaseHandlerFactory<T> KustoDatabaseHandlerFactory { get; }
 
-        public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path, string databaseName)
+        public Clusters FilterClusters(Clusters clusters, List<string>? includedConnections)
         {
+            // Connections may be marked inactive, so we need to filter them out
+            // However, if includedConnections is provided we should only process those regardless of the IsActive flag
+            var includedConnectionsIsNullOrEmpty = includedConnections == null || includedConnections.Count == 0;
+            var filteredConnections = includedConnectionsIsNullOrEmpty
+                ? clusters.Connections.Where(cluster => cluster.IsActive).ToList()
+                : clusters.Connections.Where(cluster => includedConnections != null && includedConnections.Any(name => string.Equals(name, cluster.Name, StringComparison.OrdinalIgnoreCase))).ToList();
 
+            return new Clusters
+            {
+            Connections = filteredConnections
+            };
+        }
+
+        public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path, string databaseName, List<string>? includedConnections = null)
+        {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
+            clusters = FilterClusters(clusters, includedConnections);
             var sb = new StringBuilder();
             bool isValid = true;
 
@@ -51,7 +66,7 @@ namespace KustoSchemaTools
 
                 sb.AppendLine($"# {cluster.Name}/{escapedDbName} ({cluster.Url})");
 
-                if(changes.Count == 0)
+                if (changes.Count == 0)
                 {
                     sb.AppendLine("No changes detected");
                 }
@@ -64,7 +79,7 @@ namespace KustoSchemaTools
                 }
 
                 var scriptSb = new StringBuilder();
-                foreach(var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
+                foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
                 {
                     scriptSb.AppendLine(script.Text);
                 }
@@ -72,11 +87,9 @@ namespace KustoSchemaTools
                 Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
             }
 
-            foreach(var follower in yamlDb.Followers)
+            foreach (var follower in yamlDb.Followers)
             {
-
                 Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Key}/{follower.Value.DatabaseName}");
-
 
                 var followerClient = new KustoClient(follower.Key);
                 var oldModel = FollowerLoader.LoadFollower(follower.Value.DatabaseName, followerClient);
@@ -90,7 +103,7 @@ namespace KustoSchemaTools
                 foreach (var change in changes)
                 {
                     sb.AppendLine(change.Markdown);
-                    sb.AppendLine();                    
+                    sb.AppendLine();
                 }
             }
             return (sb.ToString(), isValid);
@@ -100,14 +113,15 @@ namespace KustoSchemaTools
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
-
+            clusters = FilterClusters(clusters, null);
+            
             var escapedDbName = databaseName.BracketIfIdentifier();
             var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, escapedDbName);
 
             var db = await dbHandler.LoadAsync();
             if (includeColumns == false)
             {
-                foreach(var table in db.Tables.Values)
+                foreach (var table in db.Tables.Values)
                 {
                     table.Columns = new Dictionary<string, string>();
                 }
@@ -118,16 +132,16 @@ namespace KustoSchemaTools
         }
 
 
-        public async Task<ConcurrentDictionary<string,Exception>> Apply(string path, string databaseName)
+        public async Task<ConcurrentDictionary<string, Exception>> Apply(string path, string databaseName, List<string>? includedConnections = null)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
-
+            clusters = FilterClusters(clusters, includedConnections);
             var escapedDbName = databaseName.BracketIfIdentifier();
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
             var yamlDb = await yamlHandler.LoadAsync();
 
-            var results = new ConcurrentDictionary<string,Exception>();
+            var results = new ConcurrentDictionary<string, Exception>();
 
             await Parallel.ForEachAsync(clusters.Connections, async (cluster, token) =>
             {
