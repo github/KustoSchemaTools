@@ -62,9 +62,19 @@ namespace KustoSchemaTools
                 var kustoDb = await dbHandler.LoadAsync();
                 var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, escapedDbName, Log);
 
-                isValid &= changes.All(itm => itm.Scripts.All(itm => itm.IsValid != false));
+                var comments = changes.Select(itm => itm.Comment).Where(itm => itm != null).ToList();
+
+        
+                isValid &= changes.All(itm => itm.Scripts.All(itm => itm.IsValid != false)) && comments.All(itm => itm.FailsRollout == false);
 
                 sb.AppendLine($"# {cluster.Name}/{escapedDbName} ({cluster.Url})");
+
+                foreach (var comment in comments)
+                {
+                    sb.AppendLine($"> [!{comment.Kind.ToString().ToUpper()}]");
+                    sb.AppendLine($"> {comment.Text}");
+                    sb.AppendLine();
+                }
 
                 if (changes.Count == 0)
                 {

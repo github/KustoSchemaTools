@@ -51,5 +51,6 @@ namespace KustoSchemaTools.Changes
         }
 
 
+        public Comment Comment { get; set; }
     }
 }

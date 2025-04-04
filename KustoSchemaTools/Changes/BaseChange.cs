@@ -20,10 +20,10 @@
         public List<DatabaseScriptContainer> Scripts { get; set; } = new List<DatabaseScriptContainer>();
 
 
-        public string Markdown { get; protected set; }
+        public string Markdown { get; set; }
 
         public bool IsAsync { get; set; }
-
+        public Comment Comment { get; set; }
     }
 
 }
