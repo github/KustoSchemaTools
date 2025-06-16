@@ -1,0 +1,18 @@
+folder: test
+docString: issues for relevant services, filtered
+preformatted: true
+body: |-
+  sourceTable 
+  | where t between(startofday(_startTime)..endofday(_endTime)) or classifier == "somevalue"
+  // comments
+  | where repository_id in (table_function(_aaaaaaaaa,_bbbbbbbb,_cccccccc,_eeeeeeeee,_fffffffff) | distinct id) // prefer `in` over `join` for short right columns
+  | project id
+    , type
+    , t
+  | summarize arg_max(t, *) by id
+  | lookup (table_function(_aaaaaaaaa,_bbbbbbbb,_cccccccc,_eeeeeeeee,_fffffffff) | distinct id, classifier) on id
+  | extend type = case(
+      id == 1, "a", 
+      id == 2, "b",
+      "other") // comments
+  | project id, type, classifier

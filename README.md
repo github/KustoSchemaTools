@@ -53,12 +53,14 @@ Currently following features are supported:
     * Body
     * Docstring
     * Folder
+    * Preformatted
 * Materialized Views
     * Query
     * Retention
     * HotCache
     * Docstring
     * Folder
+    * Preformatted
 * External Tables (managed identity/impersonation only)
     * Storage / Delta / SQL
     * Folder
@@ -73,4 +75,5 @@ Currently following features are supported:
     * Extenal Tables
     * Continuous Exports
 
-The `DatabaseCleanup` will remove redundant retention and hotcache definitions. It will also pretty print KQL queries in functions, update policies, materialized views and continuous exports.
+The `DatabaseCleanup` will remove redundant retention and hotcache definitions. 
+It will also pretty print KQL queries in functions (unless the `preformatted` feature is used) , update policies, materialized views and continuous exports.
