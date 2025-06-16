@@ -25,9 +25,14 @@ namespace KustoSchemaTools.Tests.Parser
 
             Assert.NotNull(db);
             Assert.Equal(2, db.Tables.Count);
-            Assert.Equal(1, db.Functions.Count);
+            Assert.Single(db.Functions);
             Assert.Equal(6, db.Functions["UP"].Body.RowLength());
             Assert.Equal("DemoDatabase", db.Name);
+            var policies = db.Tables["sourceTable"].Policies;
+            Assert.NotNull(policies);
+            Assert.Equal("120d", policies.Retention);
+            Assert.Equal("120d", policies.HotCache);
+            Assert.Equal("Test team", db.Team);
             Assert.True(db.Tables["sourceTable"].RestrictedViewAccess);
 
             // these tests do not compile! to be removed in a future PR.
