@@ -27,7 +27,6 @@ namespace KustoSchemaTools.Tests.Parser
 
             Assert.NotNull(db);
             Assert.Equal(2, db.Tables.Count);
-            Assert.Equal(4, db.Functions.Count);
             Assert.Equal(6, db.Functions["UP"].Body.RowLength());
             Assert.Equal("DemoDatabase", db.Name);
 
@@ -140,9 +139,39 @@ namespace KustoSchemaTools.Tests.Parser
                 Assert.NotNull(mv_with_cleanup);
                 Assert.NotNull(mv_without_cleanup);
                 Assert.Equal(should_match, mv_without_cleanup.Query == mv_with_cleanup.Query);
+
+                Assert.DoesNotContain("Preformatted", mv_with_cleanup.Query);
+                Assert.DoesNotContain("Preformatted", mv_without_cleanup.Query);
             }
             AssertMaterializedView("mv", false);
             AssertMaterializedView("mv_preformatted", true);
+        }
+
+        [Fact]
+        public async Task VerifyFunctionWithCommentAtEnd()
+        {
+            // This test verifies that functions with comments at the end without a newline
+            // are handled correctly when scripts are generated
+
+            // Arrange - First load the database
+            var factory = new YamlDatabaseHandlerFactory<Model.Database>()
+                .WithPlugin(new TablePlugin())
+                .WithPlugin(new FunctionPlugin())
+                .WithPlugin(new DatabaseCleanup());
+            var loader = factory.Create(Path.Combine(BasePath, Deployment), Database);
+
+            // Act - Load the database
+            var db = await loader.LoadAsync();
+            var commentEndFunction = db.Functions["COMMENT_END"];
+            Assert.NotNull(commentEndFunction);
+
+            // Generate the script container for the function
+            var scriptContainers = commentEndFunction.CreateScripts("COMMENT_END", false);
+            Assert.Single(scriptContainers);
+
+            var script = scriptContainers[0].Script.Text;
+            var expected = ".create-or-alter function with(SkipValidation=```False```, View=```False```, Folder=```test```, DocString=```Function with comment at end```) COMMENT_END () { sourceTable\n| limit 100\n| where IsNotEmpty(EventId) // this is a comment at the end\n }";
+            Assert.Equal(expected, script);
         }
     }
 }

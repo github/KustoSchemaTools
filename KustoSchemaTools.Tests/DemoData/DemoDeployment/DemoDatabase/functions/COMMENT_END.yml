@@ -1,0 +1,6 @@
+folder: test
+docString: Function with comment at end
+body: |-
+  sourceTable
+  | limit 100
+  | where IsNotEmpty(EventId) // this is a comment at the end

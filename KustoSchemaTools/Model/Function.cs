@@ -4,6 +4,7 @@ using KustoSchemaTools.Changes;
 using KustoSchemaTools.Parser;
 using System.Text;
 using YamlDotNet.Serialization;
+using System.Xml.Schema;
 
 namespace KustoSchemaTools.Model
 {
@@ -16,14 +17,14 @@ namespace KustoSchemaTools.Model
         public string Parameters { get; set; } = "";
         [YamlMember(ScalarStyle = YamlDotNet.Core.ScalarStyle.Literal)]
         public bool Preformatted { get; set; } = false;
-
         public string Body { get; set; }
 
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             // load the non-query parts of the yaml model
+            var excludedProperties = new HashSet<string>(["Body", "Parameters", "Preformatted"]);
             var properties = GetType().GetProperties()
-                .Where(p => p.GetValue(this) != null && p.Name != "Body" && p.Name != "Parameters")
+                .Where(p => p.GetValue(this) != null && !excludedProperties.Contains(p.Name))
                 .Select(p => $"{p.Name}=```{p.GetValue(this)}```");
             var propertiesString = string.Join(", ", properties);
 
@@ -75,7 +76,37 @@ namespace KustoSchemaTools.Model
                 parameters = replacedFunction[9..^15];
             }
 
-            return new List<DatabaseScriptContainer> { new DatabaseScriptContainer("CreateOrAlterFunction", 40, $".create-or-alter function with({propertiesString}) {name} ({parameters}) {{ {Body} }}") };
+            // Normalize the body to ensure it ends with exactly one newline character
+            // and remove trailing whitespace from each line
+            string normalizedBody = Body;
+            
+            if (string.IsNullOrEmpty(normalizedBody))
+            {
+                // Empty body case
+                normalizedBody = string.Empty;
+            }
+            else
+            {
+                // Split the body into lines, trim each line, and rejoin
+                string[] lines = normalizedBody.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+                
+                // Process all lines except the last one
+                for (int i = 0; i < lines.Length - 1; i++)
+                {
+                    lines[i] = lines[i].TrimEnd();
+                }
+                
+                // Handle the last line separately - no need to trim trailing newlines since we split on them
+                if (lines.Length > 0)
+                {
+                    lines[lines.Length - 1] = lines[lines.Length - 1].TrimEnd();
+                }
+                
+                // Rejoin the lines and add exactly one newline character at the end
+                normalizedBody = string.Join(Environment.NewLine, lines) + Environment.NewLine;
+            }
+
+            return new List<DatabaseScriptContainer> { new DatabaseScriptContainer("CreateOrAlterFunction", 40, $".create-or-alter function with({propertiesString}) {name} ({parameters}) {{ {normalizedBody} }}") };
         }
     }
 
