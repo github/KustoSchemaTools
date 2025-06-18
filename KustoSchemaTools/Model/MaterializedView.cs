@@ -24,13 +24,21 @@ namespace KustoSchemaTools.Model
         [Obsolete("Use policies instead")]
         public string? RowLevelSecurity { get; set; }
         public Policy? Policies { get; set; }
-
+        public bool Preformatted { get; set; } = false;
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var asyncSetup = isNew && Backfill == true;
 
-
-            var excludedProperties = new HashSet<string>(["Query", "Source", "Kind", "RetentionAndCachePolicy", "RowLevelSecurity", "Policies"]);
+            var excludedProperties = new HashSet<string>([
+                "Query",
+                "Source",
+                "Kind",
+                "RetentionAndCachePolicy",
+                "RowLevelSecurity",
+                "Policies",
+                "Preformatted"
+                ]);
+                
             if (!asyncSetup)
             {
                 excludedProperties.Add("EffectiveDateTime");
@@ -40,11 +48,10 @@ namespace KustoSchemaTools.Model
             var scripts = new List<DatabaseScriptContainer>();
             var properties = string.Join(", ", GetType().GetProperties()
                 .Where(p => p.GetValue(this) != null && excludedProperties.Contains(p.Name) == false)
-                .Select(p => new {Name = p.Name, Value = p.GetValue(this) })
+                .Select(p => new { Name = p.Name, Value = p.GetValue(this) })
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
                 .Select(p => $"{p.Name}=```{p.Value}```"));
 
-  
             if (asyncSetup)
             {
                 scripts.Add(new DatabaseScriptContainer("CreateMaterializedViewAsync", Kind == "table" ? 40 : 41, $".create async ifnotexists materialized-view with ({properties}) {name} on {Kind} {Source} {{ {Query} }}", true));
@@ -57,9 +64,7 @@ namespace KustoSchemaTools.Model
             {
                 scripts.AddRange(Policies.CreateScripts(name, "materialized-view"));
             }
-           
             return scripts;
         }
     }
-
 }

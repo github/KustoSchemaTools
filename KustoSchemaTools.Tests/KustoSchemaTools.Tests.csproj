@@ -27,20 +27,9 @@
     <ProjectReference Include="..\KustoSchemaTools\KustoSchemaTools.csproj" />
   </ItemGroup>
 
+  <!-- Automatically include all files in the DemoData directory -->
   <ItemGroup>
-    <None Update="DemoData\DemoDeployment\clusters.yml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="DemoData\DemoDeployment\DemoDatabase\database.yml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="DemoData\DemoDeployment\DemoDatabase\functions\UP.yml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="DemoData\DemoDeployment\DemoDatabase\tables\sourceTable.yml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="DemoData\DemoDeployment\DemoDatabase\tables\tableWithUp.yml">
+    <None Include="DemoData\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

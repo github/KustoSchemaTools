@@ -122,7 +122,12 @@ namespace KustoSchemaTools.Parser
                 {
                     policy.HotCache = null;
                 }
-                entity.Value.Query = entity.Value.Query.PrettifyKql();
+
+                if (entity.Value.Preformatted == false)
+                {
+                    // format the query unless the materialized view opts out
+                    entity.Value.Query = entity.Value.Query.PrettifyKql();
+                }
             }
 
             foreach(var entity in database.MaterializedViews)
@@ -135,7 +140,12 @@ namespace KustoSchemaTools.Parser
 
             foreach (var entity in database.Functions)
             {
-                entity.Value.Body = entity.Value.Body.PrettifyKql();
+                // format unless the function opts out
+                // there are known issues with PrettifyKql function. 
+                if (!entity.Value.Preformatted)
+                {
+                    entity.Value.Body = entity.Value.Body.PrettifyKql();
+                }
             }
             foreach (var up in database.Tables.Values.Where(itm => itm.Policies?.UpdatePolicies != null).SelectMany(itm => itm.Policies.UpdatePolicies))
             {

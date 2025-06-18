@@ -1,0 +1,12 @@
+source: sourceTable
+kind: table
+folder: test
+retentionAndCachePolicy:
+  retention: 720d
+query: |-
+  sourceTable
+  | where type == "a"
+  | summarize hint.strategy=shuffle                           active=countif(is_active != true),
+      archived=countif(is_archived)
+      by id
+      , day
