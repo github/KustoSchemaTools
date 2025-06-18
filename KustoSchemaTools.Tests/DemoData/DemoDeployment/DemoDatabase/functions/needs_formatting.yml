@@ -1,0 +1,4 @@
+folder: test
+docString: test function that would change with formatting
+body: |-
+  sourceTable           | limit 100
