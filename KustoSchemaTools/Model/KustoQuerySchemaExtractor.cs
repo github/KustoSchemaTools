@@ -167,27 +167,24 @@ namespace KustoSchemaTools.Model
         }
 
         /// <summary>
-        /// Recursively walks the syntax tree to find column references.
+        /// Walks the syntax tree to find column references.
         /// Only includes references to columns from the source table.
         /// </summary>
         private static void ExtractColumnReferencesFromSyntax(SyntaxNode node, HashSet<string> referencedColumns, HashSet<string> sourceColumns)
         {
-            // Look for name references that resolve to columns
-            if (node is NameReference nameRef && nameRef.ReferencedSymbol is ColumnSymbol)
+            // Process all descendant nodes (GetDescendants traverses the entire subtree including the current node)
+            foreach (var descendant in node.GetDescendants<NameReference>())
             {
-                var columnName = nameRef.Name.SimpleName;
-                
-                // Only include if it's a column from the original source table
-                if (sourceColumns.Contains(columnName))
+                if (descendant.ReferencedSymbol is ColumnSymbol)
                 {
-                    referencedColumns.Add(columnName);
+                    var columnName = descendant.Name.SimpleName;
+                    
+                    // Only include if it's a column from the original source table
+                    if (sourceColumns.Contains(columnName))
+                    {
+                        referencedColumns.Add(columnName);
+                    }
                 }
-            }
-
-            // Recursively process child nodes
-            foreach (var child in node.GetDescendants<SyntaxNode>())
-            {
-                ExtractColumnReferencesFromSyntax(child, referencedColumns, sourceColumns);
             }
         }
 
