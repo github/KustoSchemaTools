@@ -1,0 +1,14 @@
+{
+	"name": "C# (.NET)",
+	"image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0",
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"github.copilot",
+                "github.copilot-chat",
+                "ms-dotnettools.csdevkit"
+			]
+		}
+	}
+}
