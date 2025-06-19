@@ -28,7 +28,7 @@ namespace KustoSchemaTools.Tests.Model
             {
                 UpdatePolicies = new List<UpdatePolicy>
                 {
-                    new UpdatePolicy { Source = "SourceTable", Query = "SourceTable | project *" },
+                    new UpdatePolicy { Source = "SourceTable", Query = "SourceTable | project EventId, Timestamp, Data" },
                     new UpdatePolicy { Source = "NonExistentTable", Query = "NonExistentTable | project *" }
                 }
             };
