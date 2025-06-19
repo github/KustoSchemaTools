@@ -23,7 +23,15 @@ namespace KustoSchemaTools.Model
         [Obsolete("Use policies instead")]
         public bool RestrictedViewAccess { get; set; } = false;
 
-        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
+        /// <summary>
+        /// Creates scripts for this table with optional update policy validation.
+        /// </summary>
+        /// <param name="name">The table name</param>
+        /// <param name="isNew">Whether this is a new table</param>
+        /// <param name="database">The database context (optional, for update policy validation)</param>
+        /// <param name="validateUpdatePolicies">Whether to validate update policies before creating scripts</param>
+        /// <returns>List of database script containers</returns>
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew, Database? database = null, bool validateUpdatePolicies = false)
         {
             var scripts = new List<DatabaseScriptContainer>();
             if (Columns != null)
@@ -41,7 +49,7 @@ namespace KustoSchemaTools.Model
 
             if (Policies != null)
             {
-                scripts.AddRange(Policies.CreateScripts(name));
+                scripts.AddRange(Policies.CreateScripts(name, this, database, validateUpdatePolicies));
             }
             if (Scripts != null)
             {
@@ -49,6 +57,17 @@ namespace KustoSchemaTools.Model
             }
         
             return scripts;
+        }
+
+        /// <summary>
+        /// Creates scripts for this table (backward compatibility).
+        /// </summary>
+        /// <param name="name">The table name</param>
+        /// <param name="isNew">Whether this is a new table</param>
+        /// <returns>List of database script containers</returns>
+        public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
+        {
+            return CreateScripts(name, isNew, null, false);
         }
     }
 

@@ -3,7 +3,6 @@ using KustoSchemaTools.Parser;
 using KustoSchemaTools.Plugins;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Changes;
-using Kusto.Data;
 using System.IO;
 
 namespace KustoSchemaTools.Tests.Parser
@@ -17,7 +16,7 @@ namespace KustoSchemaTools.Tests.Parser
         [Fact]
         public async Task GetDatabase()
         {
-            var factory = new YamlDatabaseHandlerFactory<Model.Database>()
+            var factory = new YamlDatabaseHandlerFactory<KustoSchemaTools.Model.Database>()
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin())
                 .WithPlugin(new DatabaseCleanup());
@@ -47,7 +46,7 @@ namespace KustoSchemaTools.Tests.Parser
         public async Task VerifyFunctionPreformatted()
         {
             // WITHOUT the DatabaseCleanup plugin
-            var factoryWithoutCleanup = new YamlDatabaseHandlerFactory<Model.Database>()
+            var factoryWithoutCleanup = new YamlDatabaseHandlerFactory<KustoSchemaTools.Model.Database>()
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin());
             // DatabaseCleanup intentionally omitted
@@ -55,7 +54,7 @@ namespace KustoSchemaTools.Tests.Parser
             var dbWithoutCleanup = await loaderWithoutCleanup.LoadAsync();
 
             // with the DatabaseCleanup plugin
-            var factoryWithCleanup = new YamlDatabaseHandlerFactory<Model.Database>()
+            var factoryWithCleanup = new YamlDatabaseHandlerFactory<KustoSchemaTools.Model.Database>()
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin())
                 .WithPlugin(new MaterializedViewsPlugin())
@@ -109,7 +108,7 @@ namespace KustoSchemaTools.Tests.Parser
         public async Task VerifyMaterializedView()
         {
             // WITHOUT the DatabaseCleanup plugin
-            var factoryWithoutCleanup = new YamlDatabaseHandlerFactory<Model.Database>()
+            var factoryWithoutCleanup = new YamlDatabaseHandlerFactory<KustoSchemaTools.Model.Database>()
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new MaterializedViewsPlugin());
             // DatabaseCleanup intentionally omitted
@@ -117,7 +116,7 @@ namespace KustoSchemaTools.Tests.Parser
             var dbWithoutCleanup = await loaderWithoutCleanup.LoadAsync();
 
             // with the DatabaseCleanup plugin
-            var factoryWithCleanup = new YamlDatabaseHandlerFactory<Model.Database>()
+            var factoryWithCleanup = new YamlDatabaseHandlerFactory<KustoSchemaTools.Model.Database>()
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new MaterializedViewsPlugin())
                 .WithPlugin(new DatabaseCleanup());
@@ -154,7 +153,7 @@ namespace KustoSchemaTools.Tests.Parser
             // are handled correctly when scripts are generated
 
             // Arrange - First load the database
-            var factory = new YamlDatabaseHandlerFactory<Model.Database>()
+            var factory = new YamlDatabaseHandlerFactory<KustoSchemaTools.Model.Database>()
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin())
                 .WithPlugin(new DatabaseCleanup());
