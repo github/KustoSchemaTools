@@ -1,0 +1,13 @@
+connections:
+- name: partial-test
+  url: partial.eastus
+capacityPolicy:
+  ingestionCapacity:
+    clusterMaximumConcurrentOperations: 256
+  exportCapacity:
+    coreUtilizationCoefficient: 0.5
+  materializedViewsCapacity:
+    clusterMaximumConcurrentOperations: 2
+  queryAccelerationCapacity:
+    clusterMaximumConcurrentOperations: 75
+    coreUtilizationCoefficient: 0.6
