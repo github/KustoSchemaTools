@@ -1,4 +1,4 @@
-﻿﻿using KustoSchemaTools.Model;
+﻿using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
 using Microsoft.Extensions.Logging;
 

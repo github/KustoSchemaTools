@@ -1,4 +1,4 @@
-﻿﻿using KustoSchemaTools.Changes;
+﻿using KustoSchemaTools.Changes;
 using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
