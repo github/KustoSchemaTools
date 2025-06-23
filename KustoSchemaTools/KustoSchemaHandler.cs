@@ -1,12 +1,14 @@
-﻿using KustoSchemaTools.Changes;
+﻿﻿using KustoSchemaTools.Changes;
 using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using KustoSchemaTools.Parser.KustoLoader;
-using KustoSchemaTools.Parser.KustoWriter;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.Data;
+using System.Diagnostics.Metrics;
 using System.Text;
+using System.Threading.Channels;
 
 namespace KustoSchemaTools
 {
@@ -41,13 +43,13 @@ namespace KustoSchemaTools
             {
                 Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
 
-                var dbHandler = CreateDatabaseHandlerWithCapacityPolicy(cluster.Url, escapedDbName, clusters.CapacityPolicy);
+                var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, escapedDbName);
                 var kustoDb = await dbHandler.LoadAsync();
                 var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, escapedDbName, Log);
 
                 var comments = changes.Select(itm => itm.Comment).Where(itm => itm != null).ToList();
 
-
+        
                 isValid &= changes.All(itm => itm.Scripts.All(itm => itm.IsValid != false)) && comments.All(itm => itm.FailsRollout == false);
 
                 sb.AppendLine($"# {cluster.Name}/{escapedDbName} ({cluster.Url})");
@@ -72,7 +74,7 @@ namespace KustoSchemaTools
                 }
 
                 var scriptSb = new StringBuilder();
-                foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
+                foreach(var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
                 {
                     scriptSb.AppendLine(script.Text);
                 }
@@ -80,7 +82,7 @@ namespace KustoSchemaTools
                 Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
             }
 
-            foreach (var follower in yamlDb.Followers)
+            foreach(var follower in yamlDb.Followers)
             {
 
                 Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {follower.Key}/{follower.Value.DatabaseName}");
@@ -98,7 +100,7 @@ namespace KustoSchemaTools
                 foreach (var change in changes)
                 {
                     sb.AppendLine(change.Markdown);
-                    sb.AppendLine();
+                    sb.AppendLine();                    
                 }
             }
             return (sb.ToString(), isValid);
@@ -110,12 +112,12 @@ namespace KustoSchemaTools
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
             var escapedDbName = databaseName.BracketIfIdentifier();
-            var dbHandler = CreateDatabaseHandlerWithCapacityPolicy(clusters.Connections[0].Url, escapedDbName, clusters.CapacityPolicy);
+            var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, escapedDbName);
 
             var db = await dbHandler.LoadAsync();
             if (includeColumns == false)
             {
-                foreach (var table in db.Tables.Values)
+                foreach(var table in db.Tables.Values)
                 {
                     table.Columns = new Dictionary<string, string>();
                 }
@@ -126,7 +128,7 @@ namespace KustoSchemaTools
         }
 
 
-        public async Task<ConcurrentDictionary<string, Exception>> Apply(string path, string databaseName)
+        public async Task<ConcurrentDictionary<string,Exception>> Apply(string path, string databaseName)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
@@ -135,18 +137,16 @@ namespace KustoSchemaTools
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
             var yamlDb = await yamlHandler.LoadAsync();
 
-            var results = new ConcurrentDictionary<string, Exception>();
+            var results = new ConcurrentDictionary<string,Exception>();
 
             await Parallel.ForEachAsync(clusters.Connections, async (cluster, token) =>
             {
                 try
                 {
                     Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
-
-                    // Create the database handler with capacity policy writer if needed
-                    var dbHandler = CreateDatabaseHandlerWithCapacityPolicy(cluster.Url, escapedDbName, clusters.CapacityPolicy);
+                    var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, escapedDbName);
                     await dbHandler.WriteAsync(yamlDb);
-                    results.TryAdd(cluster.Url, null!);
+                    results.TryAdd(cluster.Url, null);
                 }
                 catch (Exception ex)
                 {
@@ -155,35 +155,6 @@ namespace KustoSchemaTools
             });
 
             return results;
-        }
-
-        private IDatabaseHandler<T> CreateDatabaseHandlerWithCapacityPolicy(string clusterUrl, string databaseName, ClusterCapacityPolicy? capacityPolicy)
-        {
-            // Create a logger - in a real application this would come from DI
-            var loggerFactory = LoggerFactory.Create(builder => { });
-            var logger = loggerFactory.CreateLogger<KustoDatabaseHandler<T>>();
-
-            var factory = new KustoDatabaseHandlerFactory<T>(logger)
-                .WithReader<KustoDatabasePrincipalLoader>()
-                .WithReader<KustoDatabaseRetentionAndCacheLoader>()
-                .WithReader<KustoTableBulkLoader>()
-                .WithReader<KustoFunctionBulkLoader>()
-                .WithReader<KustoMaterializedViewBulkLoader>()
-                .WithReader<KustoExternalTableBulkLoader>()
-                .WithReader<KustoContinuousExportBulkLoader>()
-                .WithReader<KustoEntityGroupBulkLoader>()
-                .WithReader<KustoPartitioningPolicyLoader>()
-                .WithReader<ClusterCapacityPolicyLoader>()
-                .WithReader<DatabaseCleanup>()
-                .WithWriter<DefaultDatabaseWriter>();
-
-            // Add capacity policy writer if policy is defined
-            if (capacityPolicy != null)
-            {
-                factory.WithPlugin(new ClusterCapacityPolicyWriter(capacityPolicy));
-            }
-
-            return factory.Create(clusterUrl, databaseName);
         }
     }
 }

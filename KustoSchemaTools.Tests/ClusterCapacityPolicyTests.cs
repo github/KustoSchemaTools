@@ -1,5 +1,8 @@
 using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
+using KustoSchemaTools.Parser;
+using KustoSchemaTools.Parser.KustoLoader;
+using Microsoft.Extensions.Logging;
 
 namespace KustoSchemaTools.Tests
 {
@@ -292,29 +295,6 @@ namespace KustoSchemaTools.Tests
             
             // The JSON should be empty or contain only braces
             Assert.DoesNotContain("null", scriptText.ToLower());
-        }
-
-        [Fact]
-        public void IntegrationTestNullCapacityPolicyDoesNotAddWriter()
-        {
-            // This test verifies the integration behavior where a null capacity policy
-            // should not result in a ClusterCapacityPolicyWriter being added to the handler
-            
-            // Arrange - base case with no capacity policy
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "clusters.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
-
-            // Act & Assert
-            Assert.NotNull(clusters);
-            Assert.Null(clusters.CapacityPolicy);
-            
-            // The key behavior is in KustoSchemaHandler.CreateDatabaseHandlerWithCapacityPolicy:
-            // When capacityPolicy is null, no ClusterCapacityPolicyWriter should be added
-            // This means no `.alter-merge cluster policy capacity` commands will be generated
-            
-            // Note: This is tested implicitly by the fact that the method checks
-            // if (capacityPolicy != null) before adding the ClusterCapacityPolicyWriter
         }
     }
 }
