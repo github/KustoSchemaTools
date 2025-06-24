@@ -10,53 +10,34 @@ namespace KustoSchemaTools.Tests
     {
         const string BasePath = "DemoData";
         const string Deployment = "DemoDeployment";
+        const string CapacityPoliciesPath = "cluster-policies/capacity-policies";
 
         [Fact]
-        public void CanLoadClustersWithoutCapacityPolicy()
-        {
-            // Arrange - base case with no capacity policy
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "clusters.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
-
-            // Act
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
-
-            // Assert
-            Assert.NotNull(clusters);
-            Assert.Null(clusters.CapacityPolicy); // No capacity policy should be present
-            Assert.Single(clusters.Connections);
-            Assert.Equal("test", clusters.Connections[0].Name);
-            Assert.Equal("test.eastus", clusters.Connections[0].Url);
-        }
-
-        [Fact]
-        public void CanLoadClustersWithCapacityPolicy()
+        public void CanLoadClusterWithCapacityPolicy()
         {
             // Arrange - comprehensive case with all capacity policy properties
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "comprehensive-cluster-policy.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
+            var clusterFilePath = Path.Combine(BasePath, Deployment, CapacityPoliciesPath, "comprehensive-cluster-policy.yml");
+            var clusterYaml = File.ReadAllText(clusterFilePath);
 
             // Act
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
+            var cluster = Serialization.YamlPascalCaseDeserializer.Deserialize<Cluster>(clusterYaml);
 
             // Assert
-            Assert.NotNull(clusters);
-            Assert.NotNull(clusters.CapacityPolicy);
-            Assert.Single(clusters.Connections);
-            Assert.Equal("comprehensive-test", clusters.Connections[0].Name);
-            Assert.Equal("comprehensive.eastus", clusters.Connections[0].Url);
+            Assert.NotNull(cluster);
+            Assert.Equal("test", cluster.Name);
+            Assert.NotNull(cluster.CapacityPolicy);
         }
 
         [Fact]
         public void CapacityPolicyHasCorrectValues()
         {
-            // Arrange - use comprehensive clusters file
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "comprehensive-cluster-policy.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
+            // Arrange - use comprehensive cluster policy file
+            var clusterFilePath = Path.Combine(BasePath, Deployment, CapacityPoliciesPath, "comprehensive-cluster-policy.yml");
+            var clusterYaml = File.ReadAllText(clusterFilePath);
 
             // Act
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
-            var policy = clusters.CapacityPolicy;
+            var cluster = Serialization.YamlPascalCaseDeserializer.Deserialize<Cluster>(clusterYaml);
+            var policy = cluster.CapacityPolicy;
 
             // Assert
             Assert.NotNull(policy);
@@ -117,13 +98,13 @@ namespace KustoSchemaTools.Tests
         public void CapacityPolicyGeneratesCorrectKustoScript()
         {
             // Arrange
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "comprehensive-cluster-policy.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
+            var clusterFilePath = Path.Combine(BasePath, Deployment, CapacityPoliciesPath, "comprehensive-cluster-policy.yml");
+            var clusterYaml = File.ReadAllText(clusterFilePath);
+            var cluster = Serialization.YamlPascalCaseDeserializer.Deserialize<Cluster>(clusterYaml);
 
             // Act
-            Assert.NotNull(clusters.CapacityPolicy);
-            var script = clusters.CapacityPolicy.CreateScript();
+            Assert.NotNull(cluster.CapacityPolicy);
+            var script = cluster.CapacityPolicy.CreateScript();
 
             // Assert
             Assert.NotNull(script);
@@ -170,13 +151,13 @@ namespace KustoSchemaTools.Tests
         public void UnspecifiedPropertiesAreNotIncludedInScript()
         {
             // Arrange - use a partial YAML file with only some properties set
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "partial-cluster-policy.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
+            var clusterFilePath = Path.Combine(BasePath, Deployment, CapacityPoliciesPath, "partial-cluster-policy.yml");
+            var clusterYaml = File.ReadAllText(clusterFilePath);
+            var cluster = Serialization.YamlPascalCaseDeserializer.Deserialize<Cluster>(clusterYaml);
 
             // Act
-            Assert.NotNull(clusters.CapacityPolicy);
-            var script = clusters.CapacityPolicy.CreateScript();
+            Assert.NotNull(cluster.CapacityPolicy);
+            var script = cluster.CapacityPolicy.CreateScript();
             var scriptText = script.Text;
 
             // Assert - Properties that ARE specified should be included
@@ -255,14 +236,16 @@ namespace KustoSchemaTools.Tests
         [Fact]
         public void NullCapacityPolicyDoesNotGenerateScript()
         {
-            // Arrange - base case with no capacity policy
-            var clustersFilePath = Path.Combine(BasePath, Deployment, "clusters.yml");
-            var clustersYaml = File.ReadAllText(clustersFilePath);
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersYaml);
+            // Arrange - create a cluster with no capacity policy
+            var cluster = new Cluster
+            {
+                Name = "test",
+                CapacityPolicy = null
+            };
 
             // Act & Assert
-            Assert.NotNull(clusters);
-            Assert.Null(clusters.CapacityPolicy);
+            Assert.NotNull(cluster);
+            Assert.Null(cluster.CapacityPolicy);
             
             // When capacity policy is null, we shouldn't be able to create a script
             // This test verifies that the absence of capacity policy doesn't cause issues

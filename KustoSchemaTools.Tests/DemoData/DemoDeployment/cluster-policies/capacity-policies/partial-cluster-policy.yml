@@ -1,6 +1,4 @@
-connections:
-- name: partial-test
-  url: partial.eastus
+name: test
 capacityPolicy:
   ingestionCapacity:
     clusterMaximumConcurrentOperations: 256

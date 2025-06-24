@@ -1,6 +1,4 @@
-connections:
-- name: comprehensive-test
-  url: comprehensive.eastus
+name: test
 capacityPolicy:
   ingestionCapacity:
     clusterMaximumConcurrentOperations: 512
