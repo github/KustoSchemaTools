@@ -37,7 +37,7 @@ namespace KustoSchemaTools.Changes
                         capacityPolicyChange.PropertyChanges.Add(new PropertyChange
                         {
                             PropertyName = prop.Name,
-                            OldValue = oldValue?.ToString() ?? "Not Set",
+                            OldValue = oldValue.ToString(),
                             NewValue = newValue.ToString()
                         });
                     }
