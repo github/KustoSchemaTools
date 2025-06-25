@@ -1,6 +1,5 @@
-using Kusto.Data.Common;
-using Kusto.Data.Net.Client;
 using Microsoft.Extensions.Logging;
+using KustoSchemaTools.Parser;
 
 namespace KustoSchemaTools
 {
@@ -15,7 +14,7 @@ namespace KustoSchemaTools
 
         public virtual KustoClusterHandler Create(string clusterUrl)
         {
-            var client = KustoClientFactory.CreateCslQueryProvider(clusterUrl);
+            var client = new KustoClient(clusterUrl, _loggerFactory.CreateLogger<KustoClient>());
             var logger = _loggerFactory.CreateLogger<KustoClusterHandler>();
             return new KustoClusterHandler(client, logger);
         }

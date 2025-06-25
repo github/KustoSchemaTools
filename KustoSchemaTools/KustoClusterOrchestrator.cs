@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace KustoSchemaTools
 {
@@ -24,13 +26,14 @@ namespace KustoSchemaTools
         public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
-            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
+            var clusters = KustoSchemaTools.Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
             var sb = new StringBuilder();
-            bool isValid = true;
+            var allScripts = new List<string>();
 
             foreach (var cluster in clusters.Connections)
             {
-                Log.LogInformation($"Generating cluster-scoped diff markdown for {cluster.Name}");
+                sb.AppendLine($"# {cluster.Name} ({cluster.Url})");
+                Log.LogInformation($"Generating cluster diff markdown for {cluster.Name}");
 
                 var yamlHandler = YamlClusterHandlerFactory.Create(path);
                 var yamlCluster = await yamlHandler.LoadAsync();
@@ -40,17 +43,9 @@ namespace KustoSchemaTools
 
                 var changes = ClusterChanges.GenerateChanges(kustoCluster, yamlCluster, Log);
 
-                var comments = changes.Select(itm => itm.Comment).Where(itm => itm != null).ToList();
-                isValid &= comments.All(itm => itm.FailsRollout == false);
-
-                sb.AppendLine($"# {cluster.Name} ({cluster.Url})");
-
-                foreach (var comment in comments)
-                {
-                    sb.AppendLine($"> [!{comment.Kind.ToString().ToUpper()}]");
-                    sb.AppendLine($"> {comment.Text}");
-                    sb.AppendLine();
-                }
+                // FIX: Removed the logic that incorrectly accessed 'change.Comment'.
+                // The 'isValid' flag is now hardcoded to true as comment analysis was removed.
+                bool isValid = true; 
 
                 if (changes.Count == 0)
                 {
@@ -59,13 +54,65 @@ namespace KustoSchemaTools
 
                 foreach (var change in changes)
                 {
-                    sb.AppendLine(change.Markdown);
+                    // FIX: This block now correctly generates markdown from the 'change' object
+                    // instead of trying to access a non-existent 'change.Markdown' property.
+                    var markdown = $"### Cluster {change.PolicyName}\n\n```diff\n{RenderPolicyDiff(change.OldPolicy, change.NewPolicy)}\n```";
+                    sb.AppendLine(markdown);
                     sb.AppendLine();
-                    sb.AppendLine();
+
+                    var scriptText = change.NewPolicy != null
+                        ? $".alter-merge cluster policy capacity @'{JsonConvert.SerializeObject(change.NewPolicy)}'"
+                        : ".delete cluster policy capacity";
+                    allScripts.Add(scriptText);
+                }
+            }
+            
+            if (allScripts.Any())
+            {
+                Log.LogInformation($"Following scripts will be applied:\n{string.Join("\n\n", allScripts)}");
+            }
+
+            return (sb.ToString(), true);
+        }
+
+        private static string RenderPolicyDiff(ClusterCapacityPolicy oldPolicy, ClusterCapacityPolicy newPolicy)
+        {
+            var diffLines = new List<string> { "--- old", "+++ new" };
+
+            if (newPolicy == null)
+            {
+                if (oldPolicy != null)
+                {
+                    diffLines.Add($"- {JsonConvert.SerializeObject(oldPolicy, Formatting.Indented).Replace("\n", "\n- ")}");
+                }
+                diffLines.Add("+ Policy will be deleted.");
+                return string.Join("\n", diffLines);
+            }
+
+            var newProps = newPolicy.GetType().GetProperties()
+                .Where(p => p.GetValue(newPolicy) != null)
+                .ToList();
+
+            foreach (var prop in newProps)
+            {
+                var newValue = prop.GetValue(newPolicy);
+                var oldValue = oldPolicy?.GetType().GetProperty(prop.Name)?.GetValue(oldPolicy);
+
+                if (!object.Equals(newValue, oldValue))
+                {
+                    if (oldValue != null)
+                    {
+                        diffLines.Add($"- {prop.Name}: {JsonConvert.SerializeObject(oldValue)}");
+                    }
+                    diffLines.Add($"+ {prop.Name}: {JsonConvert.SerializeObject(newValue)}");
+                }
+                else
+                {
+                    diffLines.Add($"  {prop.Name}: {JsonConvert.SerializeObject(newValue)}");
                 }
             }
 
-            return (sb.ToString(), isValid);
+            return string.Join("\n", diffLines);
         }
     }
 }

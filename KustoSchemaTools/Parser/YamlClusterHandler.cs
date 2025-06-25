@@ -1,6 +1,7 @@
 using KustoSchemaTools.Model;
 using System.IO;
 using System.Threading.Tasks;
+using KustoSchemaTools.Helpers;
 
 namespace KustoSchemaTools
 {

@@ -4,15 +4,16 @@ using System.Threading.Tasks;
 using Kusto.Data.Common;
 using Newtonsoft.Json;
 using System.Data;
+using KustoSchemaTools.Parser;
 
 namespace KustoSchemaTools
 {
     public class KustoClusterHandler
     {
-        private readonly ICslQueryProvider _client;
+        private readonly KustoClient _client;
         private readonly ILogger<KustoClusterHandler> _logger;
 
-        public KustoClusterHandler(ICslQueryProvider client, ILogger<KustoClusterHandler> logger)
+        public KustoClusterHandler(KustoClient client, ILogger<KustoClusterHandler> logger)
         {
             _client = client;
             _logger = logger;
@@ -25,12 +26,12 @@ namespace KustoSchemaTools
 
             try
             {
-                using (var reader = await _client.ExecuteControlCommandAsync(".show cluster policy capacity"))
+                using (var reader = await _client.AdminClient.ExecuteControlCommandAsync(".show cluster policy capacity"))
                 {
                     if (reader.Read())
                     {
                         var policyJson = reader["Policy"].ToString();
-                        var policy = JsonConvert.DeserializeObject<CapacityPolicy>(policyJson);
+                        var policy = JsonConvert.DeserializeObject<ClusterCapacityPolicy>(policyJson);
                         cluster.CapacityPolicy = policy;
                     }
                 }
