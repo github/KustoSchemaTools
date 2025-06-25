@@ -9,10 +9,10 @@ namespace KustoSchemaTools.Changes
     {
         public static ClusterChange GenerateChanges(Cluster oldCluster, Cluster newCluster,  ILogger log)
         {
-            if (oldCluster.name != newCluster.name) {
+            if (oldCluster.Name != newCluster.Name) {
                 throw new ArgumentException($"Cluster names must match; {oldCluster.Name} != {newCluster.Name}");
             }
-            
+
             var clusterName = oldCluster.Name;
             var clusterChange = new ClusterChange
             {
