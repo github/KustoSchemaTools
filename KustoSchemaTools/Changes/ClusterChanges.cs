@@ -12,6 +12,7 @@ namespace KustoSchemaTools.Changes
             if (oldCluster.name != newCluster.name) {
                 throw new ArgumentException($"Cluster names must match; {oldCluster.Name} != {newCluster.Name}");
             }
+            
             var clusterName = oldCluster.Name;
             var clusterChange = new ClusterChange
             {
@@ -22,8 +23,7 @@ namespace KustoSchemaTools.Changes
             {
                 log.LogInformation($"Analyzing capacity policy changes for cluster {clusterName}...");
 
-                var capacityPolicyChange = new PolicyChange(); // Updated to use PolicyChange
-
+                var capacityPolicyChange = new PolicyChange(); 
                 var newPolicyProps = newCluster.CapacityPolicy.GetType().GetProperties()
                     .Where(p => p.GetValue(newCluster.CapacityPolicy) != null);
 
