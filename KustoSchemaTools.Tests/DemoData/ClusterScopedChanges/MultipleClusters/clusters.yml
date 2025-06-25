@@ -1,0 +1,16 @@
+connections:
+- name: test1
+  url: test1.eastus
+  capacityPolicy:
+    ingestionCapacity:
+      clusterMaximumConcurrentOperations: 512
+      coreUtilizationCoefficient: 0.75
+    extentsMergeCapacity:
+      minimumConcurrentOperationsPerNode: 1
+      maximumConcurrentOperationsPerNode: 3
+- name: test2
+  url: test2.eastus
+  capacityPolicy:
+    ingestionCapacity:
+      clusterMaximumConcurrentOperations: 500
+      coreUtilizationCoefficient: 0.8

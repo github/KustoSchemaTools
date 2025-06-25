@@ -1,5 +1,7 @@
-name: test
-capacityPolicy:
+connections:
+- name: test
+  url: test.eastus
+  capacityPolicy:
   ingestionCapacity:
     clusterMaximumConcurrentOperations: 256
   exportCapacity:
