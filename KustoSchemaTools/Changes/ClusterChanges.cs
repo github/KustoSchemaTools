@@ -12,7 +12,7 @@ namespace KustoSchemaTools.Changes
             if (oldCluster.name != newCluster.name) {
                 throw new ArgumentException($"Cluster names must match; {oldCluster.Name} != {newCluster.Name}");
             }
-            var clusterName = oldCluster.Name
+            var clusterName = oldCluster.Name;
             var clusterChange = new ClusterChange
             {
                 ClusterName = clusterName
