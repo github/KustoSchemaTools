@@ -41,7 +41,7 @@ namespace KustoSchemaTools
 
             foreach (var cluster in clusters.Connections)
             {
-                Log.LogInformation($"Generating database-scoped diff markdown for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
+                Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
 
                 var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, escapedDbName);
                 var kustoDb = await dbHandler.LoadAsync();
