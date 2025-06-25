@@ -26,7 +26,7 @@ namespace KustoSchemaTools
         public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
-            var clusters = KustoSchemaTools.Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
+            var clusters = KustoSchemaTools.Helpers.Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
             var sb = new StringBuilder();
             var allScripts = new List<string>();
 
@@ -54,9 +54,7 @@ namespace KustoSchemaTools
 
                 foreach (var change in changes)
                 {
-                    // FIX: This block now correctly generates markdown from the 'change' object
-                    // instead of trying to access a non-existent 'change.Markdown' property.
-                    var markdown = $"### Cluster {change.PolicyName}\n\n```diff\n{RenderPolicyDiff(change.OldPolicy, change.NewPolicy)}\n```";
+                    var markdown = $"### Cluster {change.ClusterName}\n\n```diff\n{RenderPolicyDiff(change.OldPolicy, change.NewPolicy)}\n```";
                     sb.AppendLine(markdown);
                     sb.AppendLine();
 
@@ -75,7 +73,7 @@ namespace KustoSchemaTools
             return (sb.ToString(), true);
         }
 
-        private static string RenderPolicyDiff(ClusterCapacityPolicy oldPolicy, ClusterCapacityPolicy newPolicy)
+        private static string RenderPolicyDiff(ClusterCapacityPolicy? oldPolicy, ClusterCapacityPolicy? newPolicy)
         {
             var diffLines = new List<string> { "--- old", "+++ new" };
 

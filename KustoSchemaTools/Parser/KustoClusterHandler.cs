@@ -26,13 +26,16 @@ namespace KustoSchemaTools
 
             try
             {
-                using (var reader = await _client.AdminClient.ExecuteControlCommandAsync(".show cluster policy capacity"))
+                using (var reader = await _client.AdminClient.ExecuteControlCommandAsync("", ".show cluster policy capacity", new ClientRequestProperties()))
                 {
                     if (reader.Read())
                     {
-                        var policyJson = reader["Policy"].ToString();
-                        var policy = JsonConvert.DeserializeObject<ClusterCapacityPolicy>(policyJson);
-                        cluster.CapacityPolicy = policy;
+                        var policyJson = reader["Policy"]?.ToString();
+                        if (!string.IsNullOrEmpty(policyJson))
+                        {
+                            var policy = JsonConvert.DeserializeObject<ClusterCapacityPolicy>(policyJson);
+                            cluster.CapacityPolicy = policy;
+                        }
                     }
                 }
             }

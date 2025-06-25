@@ -14,7 +14,7 @@ namespace KustoSchemaTools
 
         public virtual KustoClusterHandler Create(string clusterUrl)
         {
-            var client = new KustoClient(clusterUrl, _loggerFactory.CreateLogger<KustoClient>());
+            var client = new KustoClient(clusterUrl);
             var logger = _loggerFactory.CreateLogger<KustoClusterHandler>();
             return new KustoClusterHandler(client, logger);
         }
