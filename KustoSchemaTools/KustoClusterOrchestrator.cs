@@ -1,12 +1,11 @@
-using System.Text;
 using KustoSchemaTools.Changes;
 using KustoSchemaTools.Model;
+using KustoSchemaTools.Parser;
+using KustoSchemaTools.Helpers;
 using Microsoft.Extensions.Logging;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace KustoSchemaTools
 {
@@ -23,94 +22,36 @@ namespace KustoSchemaTools
         public YamlClusterHandlerFactory YamlClusterHandlerFactory { get; }
         public KustoClusterHandlerFactory KustoClusterHandlerFactory { get; }
 
-        public async Task<(string markDown, bool isValid)> GenerateDiffMarkdown(string path)
+        /// <summary>
+        /// Orchestrates loading the cluster definitions from YAML and the live cluster,
+        /// and returns a list of objects representing the detected changes.
+        /// </summary>
+        /// <param name="path">The path to the directory containing the cluster definition files.</param>
+        /// <returns>A list of ClusterChange objects.</returns>
+        public async Task<List<ClusterChange>> GenerateChangesAsync(string path)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
-            var clusters = KustoSchemaTools.Helpers.Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
-            var sb = new StringBuilder();
-            var allScripts = new List<string>();
+            var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
+            var allChanges = new List<ClusterChange>();
 
-            foreach (var cluster in clusters.Connections)
+            foreach (var clusterConnection in clusters.Connections)
             {
-                sb.AppendLine($"# {cluster.Name} ({cluster.Url})");
-                Log.LogInformation($"Generating cluster diff markdown for {cluster.Name}");
+                Log.LogInformation($"Generating cluster diff for {clusterConnection.Name}");
 
+                // 1. Load the "new" schema from the local YAML files
                 var yamlHandler = YamlClusterHandlerFactory.Create(path);
                 var yamlCluster = await yamlHandler.LoadAsync();
 
-                var kustoHandler = KustoClusterHandlerFactory.Create(cluster.Url);
+                // 2. Load the "old" schema from the live Kusto cluster
+                var kustoHandler = KustoClusterHandlerFactory.Create(clusterConnection.Url);
                 var kustoCluster = await kustoHandler.LoadAsync();
 
-                var changes = ClusterChanges.GenerateChanges(kustoCluster, yamlCluster, Log);
-
-                // FIX: Removed the logic that incorrectly accessed 'change.Comment'.
-                // The 'isValid' flag is now hardcoded to true as comment analysis was removed.
-                bool isValid = true; 
-
-                if (changes.Count == 0)
-                {
-                    sb.AppendLine("No changes detected");
-                }
-
-                foreach (var change in changes)
-                {
-                    var markdown = $"### Cluster {change.ClusterName}\n\n```diff\n{RenderPolicyDiff(change.OldPolicy, change.NewPolicy)}\n```";
-                    sb.AppendLine(markdown);
-                    sb.AppendLine();
-
-                    var scriptText = change.NewPolicy != null
-                        ? $".alter-merge cluster policy capacity @'{JsonConvert.SerializeObject(change.NewPolicy)}'"
-                        : ".delete cluster policy capacity";
-                    allScripts.Add(scriptText);
-                }
-            }
-            
-            if (allScripts.Any())
-            {
-                Log.LogInformation($"Following scripts will be applied:\n{string.Join("\n\n", allScripts)}");
+                // 3. Compare the two and generate a change object
+                var change = ClusterChanges.GenerateChanges(kustoCluster, yamlCluster, Log);
+                allChanges.Add(change);
             }
 
-            return (sb.ToString(), true);
-        }
-
-        private static string RenderPolicyDiff(ClusterCapacityPolicy? oldPolicy, ClusterCapacityPolicy? newPolicy)
-        {
-            var diffLines = new List<string> { "--- old", "+++ new" };
-
-            if (newPolicy == null)
-            {
-                if (oldPolicy != null)
-                {
-                    diffLines.Add($"- {JsonConvert.SerializeObject(oldPolicy, Formatting.Indented).Replace("\n", "\n- ")}");
-                }
-                diffLines.Add("+ Policy will be deleted.");
-                return string.Join("\n", diffLines);
-            }
-
-            var newProps = newPolicy.GetType().GetProperties()
-                .Where(p => p.GetValue(newPolicy) != null)
-                .ToList();
-
-            foreach (var prop in newProps)
-            {
-                var newValue = prop.GetValue(newPolicy);
-                var oldValue = oldPolicy?.GetType().GetProperty(prop.Name)?.GetValue(oldPolicy);
-
-                if (!object.Equals(newValue, oldValue))
-                {
-                    if (oldValue != null)
-                    {
-                        diffLines.Add($"- {prop.Name}: {JsonConvert.SerializeObject(oldValue)}");
-                    }
-                    diffLines.Add($"+ {prop.Name}: {JsonConvert.SerializeObject(newValue)}");
-                }
-                else
-                {
-                    diffLines.Add($"  {prop.Name}: {JsonConvert.SerializeObject(newValue)}");
-                }
-            }
-
-            return string.Join("\n", diffLines);
+            return allChanges;
         }
     }
 }
