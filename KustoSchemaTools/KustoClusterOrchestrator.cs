@@ -28,11 +28,11 @@ namespace KustoSchemaTools
         /// </summary>
         /// <param name="path">The path to the directory containing the cluster definition files.</param>
         /// <returns>A list of ClusterChange objects.</returns>
-        public async Task<List<ClusterChange>> GenerateChangesAsync(string path)
+        public async Task<List<ClusterChangeSet>> GenerateChangesAsync(string path)
         {
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
-            var allChanges = new List<ClusterChange>();
+            var allChanges = new List<ClusterChangeSet>();
 
             foreach (var clusterConnection in clusters.Connections)
             {

@@ -7,56 +7,76 @@ namespace KustoSchemaTools.Changes
 {
     public class ClusterChanges
     {
-        public static ClusterChange GenerateChanges(Cluster oldCluster, Cluster newCluster,  ILogger log)
+        public static ClusterChangeSet GenerateChanges(Cluster oldCluster, Cluster newCluster, ILogger log)
         {
-            if (oldCluster.Name != newCluster.Name) {
+            if (oldCluster.Name != newCluster.Name)
+            {
                 throw new ArgumentException($"Cluster names must match; {oldCluster.Name} != {newCluster.Name}");
             }
-
             var clusterName = oldCluster.Name;
-            var clusterChange = new ClusterChange
-            {
-                ClusterName = clusterName
-            };
+            var changeSet = new ClusterChangeSet(clusterName, oldCluster, newCluster);
 
-            if (newCluster.CapacityPolicy != null)
-            {
-                log.LogInformation($"Analyzing capacity policy changes for cluster {clusterName}...");
+            // 1. Get capacity policy changes
+            log.LogInformation($"Analyzing capacity policy changes for cluster {clusterName}...");
+            if (newCluster.CapacityPolicy == null) {
+                log.LogInformation("No capacity policy defined in the new cluster configuration.");
+            } else {
+                var capacityPolicyChange = ComparePolicy(
+                    "Cluster Capacity Policy",
+                    "default",
+                    oldCluster.CapacityPolicy!,
+                    newCluster.CapacityPolicy!,
+                    policy => new List<DatabaseScriptContainer> {
+                    new DatabaseScriptContainer("AlterClusterCapacityPolicy", 10, newCluster.CapacityPolicy!.ToUpdateScript())
+                    });
 
-                var capacityPolicyChange = new PolicyChange(); 
-                var newPolicyProps = newCluster.CapacityPolicy.GetType().GetProperties()
-                    .Where(p => p.GetValue(newCluster.CapacityPolicy) != null);
-
-                foreach (var prop in newPolicyProps)
+                if (capacityPolicyChange != null)
                 {
-                    var newValue = prop.GetValue(newCluster.CapacityPolicy);
-                    var oldValue = prop.GetValue(oldCluster.CapacityPolicy);
-
-                    if (!object.Equals(newValue, oldValue))
-                    {
-                        capacityPolicyChange.PropertyChanges.Add(new PropertyChange
-                        {
-                            PropertyName = prop.Name,
-                            OldValue = oldValue.ToString(),
-                            NewValue = newValue.ToString()
-                        });
-                    }
-                }
-
-                if (capacityPolicyChange.PropertyChanges.Any())
-                {
-                    log.LogInformation($"{capacityPolicyChange.PropertyChanges.Count} properties in the capacity policy have changed.");
-                    var newPolicyJson = JsonConvert.SerializeObject(newCluster.CapacityPolicy, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                    capacityPolicyChange.UpdateScript = $".alter-merge cluster policy capacity @'{newPolicyJson}'";
-                    clusterChange.CapacityPolicyChange = capacityPolicyChange;
-                }
-                else
-                {
-                    log.LogInformation("No changes detected in the capacity policy.");
+                    changeSet.Changes.Add(capacityPolicyChange);
                 }
             }
 
-            return clusterChange;
+            changeSet.Scripts.AddRange(changeSet.Changes.SelectMany(c => c.Scripts));
+            return changeSet;
+        }
+
+        /// <summary>
+        /// Compares two policy objects property-by-property and returns a detailed change object.
+        /// </summary>
+        private static IChange ComparePolicy<T>(string entityType, string entityName, T oldPolicy, T newPolicy, Func<T, List<DatabaseScriptContainer>> scriptGenerator) where T : class
+        {
+            if (newPolicy == null) return null;
+
+            // Create the specialized change object that can hold property-level diffs
+            var policyChange = new PolicyChange<T>(entityType, entityName, oldPolicy, newPolicy);
+
+            // Use reflection to find all changed properties
+            var properties = typeof(T).GetProperties().Where(p => p.CanRead && p.CanWrite);
+            foreach (var prop in properties)
+            {
+                var oldValue = prop.GetValue(oldPolicy);
+                var newValue = prop.GetValue(newPolicy);
+
+                // Only consider properties set in the new policy for changes
+                if (newValue != null && !object.Equals(oldValue, newValue))
+                {
+                    policyChange.PropertyChanges.Add(new PropertyChange
+                    {
+                        PropertyName = prop.Name,
+                        OldValue = oldValue?.ToString() ?? "Not Set",
+                        NewValue = newValue.ToString()
+                    });
+                }
+            }
+
+            // If any properties were changed, finalize the change object and return it
+            if (policyChange.PropertyChanges.Any())
+            {
+                policyChange.Scripts.AddRange(scriptGenerator(newPolicy));
+                return policyChange;
+            }
+
+            return null;
         }
     }
 }

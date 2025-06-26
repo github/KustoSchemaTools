@@ -3,6 +3,7 @@ using KustoSchemaTools.Helpers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using Kusto.Language;
 
 namespace KustoSchemaTools.Model
 {
@@ -57,6 +58,29 @@ namespace KustoSchemaTools.Model
             hc.Add(QueryAccelerationCapacity);
             hc.Add(GraphSnapshotsCapacity);
             return hc.ToHashCode();
+        }
+
+        public string ToJson()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.Indented
+            });
+        }
+
+        public string ToUpdateScript()
+        {
+            var json = ToJson();
+            var script = $".alter-merge cluster policy capacity ```{json}```";
+            var parsedScript = KustoCode.Parse(script);
+            var diagnostics = parsedScript.GetDiagnostics();
+            if (diagnostics.Any())
+            {
+                Console.WriteLine($"Generated script: {diagnostics[0]}");
+
+            }
+            return script;
         }
     }
 

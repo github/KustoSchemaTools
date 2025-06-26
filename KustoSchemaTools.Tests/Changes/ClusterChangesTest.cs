@@ -25,41 +25,41 @@ namespace KustoSchemaTools.Tests.Changes
             var newCluster = CreateClusterWithPolicy(0.2, 1, 2, 3);
 
             // Act
-            var changes = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
+            var changeSet = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
 
             // Assert
-            Assert.NotNull(changes);
-            Assert.Null(changes.CapacityPolicyChange);
+            Assert.NotNull(changeSet);
+            Assert.Empty(changeSet.Changes);
         }
+        [Fact]
+        public void GenerateChanges_WithSinglePropertyChange_ShouldDetectChangeAndCreateScript()
+        {
+            // Arrange
+            var oldCluster = CreateClusterWithPolicy(0.2, 1, 2, 3);
+            var newCluster = CreateClusterWithPolicy(0.2, 1, 2, 5);
 
-        // [Fact]
-        // public void GenerateChanges_WithSinglePropertyChange_ShouldDetectChangeAndCreateScript()
-        // {
-        //     // Arrange
-        //     var oldCluster = CreateClusterWithPolicy(totalCapacity: 1000, coreUtilization: 0.75);
-        //     var newCluster = CreateClusterWithPolicy(totalCapacity: 1200, coreUtilization: 0.75);
+            // Act
+            var changeSet = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
 
-        //     // Act
-        //     var changes = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
+            // Assert
+            Assert.NotNull(changeSet);
+            Assert.NotEmpty(changeSet.Changes);
+            Assert.NotEmpty(changeSet.Scripts);
 
-        //     // Assert
-        //     Assert.NotNull(changes);
+            // Asserts that there is exactly one policy change in the change set
+            var policyChange = Assert.Single(changeSet.Changes) as PolicyChange<ClusterCapacityPolicy>;
+            Assert.NotNull(policyChange);
 
-        //     // Asserts that there is exactly one item in the collection and returns it
-        //     var policyChange = Assert.Single(changes.PolicyChanges);
-        //     Assert.Equal("Capacity", policyChange.Key);
+            // Asserts that there is exactly one property change detected.
+            // Because a nested property changed, the top-level property containing it is marked as changed.
+            var propertyChange = Assert.Single(policyChange.PropertyChanges);
+            Assert.Equal("MaterializedViewsCapacity", propertyChange.PropertyName);
 
-        //     var capacityChange = policyChange.Value;
-        //     var propertyChange = Assert.Single(capacityChange.PropertyChanges);
-
-        //     Assert.Equal("TotalCapacity", propertyChange.PropertyName);
-        //     Assert.Equal("1000", propertyChange.OldValue);
-        //     Assert.Equal("1200", propertyChange.NewValue);
-
-        //     var expectedJson = JsonConvert.SerializeObject(newCluster.CapacityPolicy, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-        //     var expectedScript = $".alter-merge cluster policy capacity @'{expectedJson}'";
-        //     Assert.Equal(expectedScript, capacityChange.UpdateScript);
-        // }
+            // Assert that the correct script is generated
+            var expectedScript = newCluster.CapacityPolicy.ToUpdateScript();
+            var actualScriptContainer = Assert.Single(changeSet.Scripts);
+            Assert.Equal(expectedScript, actualScriptContainer.Script.Text);
+        }
 
         // [Fact]
         // public void GenerateChanges_WithMultiplePropertyChanges_ShouldDetectAllChanges()
