@@ -14,7 +14,7 @@ namespace KustoSchemaTools.Tests.Parser
         public async Task LoadAsync_ValidYamlFile_ReturnsClustersList()
         {
             // Arrange
-            var testFilePath = "/workspaces/KustoSchemaTools/KustoSchemaTools.Tests/DemoData/ClusterScopedChanges/MultipleClusters/clusters.yml";
+            var testFilePath = "/workspaces/KustoSchemaTools/KustoSchemaTools.Tests/DemoData/ClusterScopedChanges/multipleClusters.yml";
             var handler = new YamlClusterHandler(testFilePath);
 
             // Act
@@ -23,7 +23,7 @@ namespace KustoSchemaTools.Tests.Parser
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
-            
+
             // Verify first cluster
             var cluster1 = result[0];
             Assert.Equal("test1", cluster1.Name);
@@ -96,7 +96,7 @@ namespace KustoSchemaTools.Tests.Parser
         }
 
         [Fact]
-        public async Task LoadAsync_MissingConnections_ThrowsInvalidOperationException()
+        public async Task LoadAsync_InvalidClustersProperties_ThrowsInvalidOperationException()
         {
             // Arrange
             var tempFilePath = Path.GetTempFileName();
@@ -107,63 +107,8 @@ namespace KustoSchemaTools.Tests.Parser
 
                 // Act & Assert
                 var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
-                Assert.Contains("Invalid clusters file format", exception.Message);
-            }
-            finally
-            {
-                if (File.Exists(tempFilePath))
-                    File.Delete(tempFilePath);
-            }
-        }
-
-        [Fact]
-        public async Task LoadAsync_ClusterMissingName_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            var tempFilePath = Path.GetTempFileName();
-            try
-            {
-                var yamlContent = @"
-connections:
-- url: test.eastus
-  capacityPolicy:
-    ingestionCapacity:
-      clusterMaximumConcurrentOperations: 100
-";
-                await File.WriteAllTextAsync(tempFilePath, yamlContent);
-                var handler = new YamlClusterHandler(tempFilePath);
-
-                // Act & Assert
-                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
-                Assert.Contains("Cluster missing required 'name' property", exception.Message);
-            }
-            finally
-            {
-                if (File.Exists(tempFilePath))
-                    File.Delete(tempFilePath);
-            }
-        }
-
-        [Fact]
-        public async Task LoadAsync_ClusterMissingUrl_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            var tempFilePath = Path.GetTempFileName();
-            try
-            {
-                var yamlContent = @"
-connections:
-- name: test
-  capacityPolicy:
-    ingestionCapacity:
-      clusterMaximumConcurrentOperations: 100
-";
-                await File.WriteAllTextAsync(tempFilePath, yamlContent);
-                var handler = new YamlClusterHandler(tempFilePath);
-
-                // Act & Assert
-                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
-                Assert.Contains("Cluster 'test' missing required 'url' property", exception.Message);
+                Assert.Contains("Failed to parse clusters file", exception.Message);
+                Assert.Contains("Property 'someOtherProperty' not found on type 'KustoSchemaTools.Model.Clusters'.", exception.Message);
             }
             finally
             {

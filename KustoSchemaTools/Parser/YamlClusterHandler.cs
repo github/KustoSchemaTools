@@ -34,25 +34,6 @@ namespace KustoSchemaTools
                 }
 
                 var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFileContent);
-                
-                if (clusters?.Connections == null)
-                {
-                    throw new InvalidOperationException($"Invalid clusters file format. Expected 'connections' property not found in: {_filePath}");
-                }
-
-                // Validate that each cluster has required properties
-                foreach (var cluster in clusters.Connections)
-                {
-                    if (string.IsNullOrWhiteSpace(cluster.Name))
-                    {
-                        throw new InvalidOperationException($"Cluster missing required 'name' property in file: {_filePath}");
-                    }
-                    
-                    if (string.IsNullOrWhiteSpace(cluster.Url))
-                    {
-                        throw new InvalidOperationException($"Cluster '{cluster.Name}' missing required 'url' property in file: {_filePath}");
-                    }
-                }
 
                 return clusters.Connections.ToList();
             }
