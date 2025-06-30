@@ -3,7 +3,7 @@ using KustoSchemaTools.Parser;
 
 namespace KustoSchemaTools
 {
-    public class KustoClusterHandlerFactory
+    public class KustoClusterHandlerFactory : IKustoClusterHandlerFactory
     {
         private readonly ILoggerFactory _loggerFactory;
 

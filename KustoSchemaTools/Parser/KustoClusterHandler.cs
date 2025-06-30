@@ -19,7 +19,7 @@ namespace KustoSchemaTools
             _logger = logger;
         }
 
-        public async Task<Cluster> LoadAsync()
+        public virtual async Task<Cluster> LoadAsync()
         {
             var cluster = new Cluster();
             _logger.LogInformation("Loading cluster capacity policy...");
