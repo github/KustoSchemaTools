@@ -14,7 +14,6 @@ namespace KustoSchemaTools.Helpers
         {
             Formatting = Formatting.Indented,
             ContractResolver = new PascalCaseContractResolver(),
-            NullValueHandling = NullValueHandling.Ignore,
         };
 
         public static JsonSerializer JsonSerializer { get; } = new JsonSerializer
