@@ -19,8 +19,8 @@ namespace KustoSchemaTools.Changes
 
         private void Init()
         {
-            var toEntityStrings = To.Select(t => $"cluster('{t.Cluster}').database('{t.Database}')").ToList();
-            var fromEntityStrings = From?.Select(f => $"cluster('{f.Cluster}').database('{f.Database}')").ToList() ?? new List<string>();
+            var toEntityStrings = To.Select(t => $"cluster('{t.Cluster}').database('{t.Database.BracketIfIdentifier()}')").ToList();
+            var fromEntityStrings = From?.Select(f => $"cluster('{f.Cluster}').database('{f.Database.BracketIfIdentifier()}')").ToList() ?? new List<string>();
 
             var added = toEntityStrings.Except(fromEntityStrings);
             var removed = fromEntityStrings.Except(toEntityStrings);
