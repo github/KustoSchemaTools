@@ -54,6 +54,8 @@ namespace KustoSchemaTools.Tests.Changes
             // Because a nested property changed, the top-level property containing it is marked as changed.
             var propertyChange = Assert.Single(policyChange.PropertyChanges);
             Assert.Equal("MaterializedViewsCapacity", propertyChange.PropertyName);
+            Assert.Equal("{\"ClusterMaximumConcurrentOperations\":1,\"ExtentsRebuildCapacity\":{\"ClusterMaximumConcurrentOperations\":2,\"MaximumConcurrentOperationsPerNode\":3}}", propertyChange.OldValue);
+            Assert.Equal("{\"ClusterMaximumConcurrentOperations\":1,\"ExtentsRebuildCapacity\":{\"ClusterMaximumConcurrentOperations\":2,\"MaximumConcurrentOperationsPerNode\":5}}", propertyChange.NewValue);
 
             // Assert that the correct script is generated
             var expectedScript = newCluster.CapacityPolicy.ToUpdateScript();
@@ -61,67 +63,50 @@ namespace KustoSchemaTools.Tests.Changes
             Assert.Equal(expectedScript, actualScriptContainer.Script.Text);
         }
 
-        // [Fact]
-        // public void GenerateChanges_WithMultiplePropertyChanges_ShouldDetectAllChanges()
-        // {
-        //     // Arrange
-        //     var oldCluster = CreateClusterWithPolicy(totalCapacity: 1000, coreUtilization: 0.75);
-        //     var newCluster = CreateClusterWithPolicy(totalCapacity: 1200, coreUtilization: 0.90);
+        [Fact]
+        public void GenerateChanges_WithMultiplePropertyChanges_ShouldDetectAllChanges()
+        {
+            // Arrange
+            var oldCluster = CreateClusterWithPolicy(ingestionCapacityCoreUtilizationCoefficient: 0.75, materializedViewsCapacityClusterMaximumConcurrentOperations: 10);
+            var newCluster = CreateClusterWithPolicy(ingestionCapacityCoreUtilizationCoefficient: 0.95, materializedViewsCapacityClusterMaximumConcurrentOperations: 20);
 
-        //     // Act
-        //     var changes = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
+            // Act
+            var changeSet = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
 
-        //     // Assert
-        //     var policyChange = Assert.Single(changes.PolicyChanges);
-        //     var capacityChange = policyChange.Value;
-        //     Assert.Equal(2, capacityChange.PropertyChanges.Count);
+            // Assert
+            var policyChange = Assert.Single(changeSet.Changes) as PolicyChange<ClusterCapacityPolicy>;
+            Assert.NotNull(policyChange);
+            Assert.Equal(2, policyChange.PropertyChanges.Count);
 
-        //     var capacityPropChange = capacityChange.PropertyChanges.Single(p => p.PropertyName == "TotalCapacity");
-        //     var coreUtilPropChange = capacityChange.PropertyChanges.Single(p => p.PropertyName == "CoreUtilizationCoefficient");
+            var ingestionChange = Assert.Single(policyChange.PropertyChanges, p => p.PropertyName == "IngestionCapacity");
+            Assert.Equal("{\"CoreUtilizationCoefficient\":0.75}", ingestionChange.OldValue);
+            Assert.Equal("{\"CoreUtilizationCoefficient\":0.95}", ingestionChange.NewValue);
 
-        //     Assert.Equal("1000", capacityPropChange.OldValue);
-        //     Assert.Equal("1200", capacityPropChange.NewValue);
+            var mvChange = Assert.Single(policyChange.PropertyChanges, p => p.PropertyName == "MaterializedViewsCapacity");
+            Assert.Equal("{\"ClusterMaximumConcurrentOperations\":10}", mvChange.OldValue);
+            Assert.Equal("{\"ClusterMaximumConcurrentOperations\":20}", mvChange.NewValue);
 
-        //     Assert.Equal("0.75", coreUtilPropChange.OldValue);
-        //     Assert.Equal("0.9", coreUtilPropChange.NewValue);
-        // }
+            // Assert that the correct script is generated
+            var expectedScript = newCluster.CapacityPolicy.ToUpdateScript();
+            var actualScriptContainer = Assert.Single(changeSet.Scripts);
+            Assert.Equal(expectedScript, actualScriptContainer.Script.Text);
+        }
 
-        // [Fact]
-        // public void GenerateChanges_WithNoNewPolicyInYaml_ShouldDetectNoChanges()
-        // {
-        //     // Arrange
-        //     var oldCluster = CreateClusterWithPolicy(totalCapacity: 1000);
-        //     var newCluster = new Cluster(); // No capacity policy defined
+        [Fact]
+        public void GenerateChanges_WithNullNewCapacityPolicy_ShouldNotGenerateChanges()
+        {
+            // Arrange
+            var oldCluster = CreateClusterWithPolicy(ingestionCapacityCoreUtilizationCoefficient: 0.75);
+            var newCluster = new Cluster { Name = oldCluster.Name, CapacityPolicy = null };
 
-        //     // Act
-        //     var changes = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
+            // Act
+            var changeSet = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
 
-        //     // Assert
-        //     Assert.NotNull(changes);
-        //     Assert.Empty(changes.PolicyChanges);
-        // }
-
-        // [Fact]
-        // public void GenerateChanges_AgainstKustoDefaultPolicy_ShouldDetectChange()
-        // {
-        //     // Arrange
-        //     // Simulate the default policy on the cluster
-        //     var oldCluster = new Cluster { CapacityPolicy = new CapacityPolicy() };
-        //     // The new policy explicitly sets a value that differs from the default
-        //     var newCluster = CreateClusterWithPolicy(coreUtilization: 0.95);
-
-        //     // Act
-        //     var changes = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
-
-        //     // Assert
-        //     var policyChange = Assert.Single(changes.PolicyChanges).Value;
-        //     var propertyChange = Assert.Single(policyChange.PropertyChanges);
-
-        //     Assert.Equal("CoreUtilizationCoefficient", propertyChange.PropertyName);
-        //     // The default value for a double property in a new object is 0.
-        //     Assert.Equal("0", propertyChange.OldValue);
-        //     Assert.Equal("0.95", propertyChange.NewValue);
-        // }
+            // Assert
+            Assert.NotNull(changeSet);
+            Assert.Empty(changeSet.Changes);
+            Assert.Empty(changeSet.Scripts);
+        }
 
         #region Helper Methods
         private Cluster CreateClusterWithPolicy(
@@ -138,11 +123,11 @@ namespace KustoSchemaTools.Tests.Changes
                     MaterializedViewsCapacity = new MaterializedViewsCapacity
                     {
                         ClusterMaximumConcurrentOperations = materializedViewsCapacityClusterMaximumConcurrentOperations,
-                        ExtentsRebuildCapacity = new ExtentsRebuildCapacity
+                        ExtentsRebuildCapacity = (extentsRebuildClusterMaximumConcurrentOperations != null || extentsRebuildMaximumConcurrentOperationsPerNode != null) ? new ExtentsRebuildCapacity
                         {
                             ClusterMaximumConcurrentOperations = extentsRebuildClusterMaximumConcurrentOperations,
                             MaximumConcurrentOperationsPerNode = extentsRebuildMaximumConcurrentOperationsPerNode
-                        }
+                        } : null
                     },
                     IngestionCapacity = new IngestionCapacity
                     {

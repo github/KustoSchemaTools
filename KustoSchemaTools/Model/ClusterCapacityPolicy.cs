@@ -97,6 +97,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as IngestionCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, CoreUtilizationCoefficient);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class ExtentsMergeCapacity : IEquatable<ExtentsMergeCapacity>
@@ -112,6 +120,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as ExtentsMergeCapacity);
         public override int GetHashCode() => HashCode.Combine(MinimumConcurrentOperationsPerNode, MaximumConcurrentOperationsPerNode);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class ExtentsPurgeRebuildCapacity : IEquatable<ExtentsPurgeRebuildCapacity>
@@ -125,6 +141,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as ExtentsPurgeRebuildCapacity);
         public override int GetHashCode() => HashCode.Combine(MaximumConcurrentOperationsPerNode);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class ExportCapacity : IEquatable<ExportCapacity>
@@ -140,6 +164,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as ExportCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, CoreUtilizationCoefficient);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class ExtentsPartitionCapacity : IEquatable<ExtentsPartitionCapacity>
@@ -155,6 +187,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as ExtentsPartitionCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMinimumConcurrentOperations, ClusterMaximumConcurrentOperations);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class MaterializedViewsCapacity : IEquatable<MaterializedViewsCapacity>
@@ -170,6 +210,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as MaterializedViewsCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, ExtentsRebuildCapacity);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class ExtentsRebuildCapacity : IEquatable<ExtentsRebuildCapacity>
@@ -185,6 +233,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as ExtentsRebuildCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, MaximumConcurrentOperationsPerNode);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class StoredQueryResultsCapacity : IEquatable<StoredQueryResultsCapacity>
@@ -200,6 +256,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as StoredQueryResultsCapacity);
         public override int GetHashCode() => HashCode.Combine(MaximumConcurrentOperationsPerDbAdmin, CoreUtilizationCoefficient);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class StreamingIngestionPostProcessingCapacity : IEquatable<StreamingIngestionPostProcessingCapacity>
@@ -213,6 +277,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as StreamingIngestionPostProcessingCapacity);
         public override int GetHashCode() => HashCode.Combine(MaximumConcurrentOperationsPerNode);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class PurgeStorageArtifactsCleanupCapacity : IEquatable<PurgeStorageArtifactsCleanupCapacity>
@@ -226,6 +298,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as PurgeStorageArtifactsCleanupCapacity);
         public override int GetHashCode() => HashCode.Combine(MaximumConcurrentOperationsPerCluster);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class PeriodicStorageArtifactsCleanupCapacity : IEquatable<PeriodicStorageArtifactsCleanupCapacity>
@@ -239,6 +319,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as PeriodicStorageArtifactsCleanupCapacity);
         public override int GetHashCode() => HashCode.Combine(MaximumConcurrentOperationsPerCluster);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class QueryAccelerationCapacity : IEquatable<QueryAccelerationCapacity>
@@ -254,6 +342,14 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as QueryAccelerationCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, CoreUtilizationCoefficient);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class GraphSnapshotsCapacity : IEquatable<GraphSnapshotsCapacity>
@@ -267,5 +363,13 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as GraphSnapshotsCapacity);
         public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 }
