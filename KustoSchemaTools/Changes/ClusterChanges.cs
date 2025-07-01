@@ -24,10 +24,10 @@ namespace KustoSchemaTools.Changes
                 var capacityPolicyChange = ComparePolicy(
                     "Cluster Capacity Policy",
                     "default",
-                    oldCluster.CapacityPolicy!,
-                    newCluster.CapacityPolicy!,
+                    oldCluster.CapacityPolicy,
+                    newCluster.CapacityPolicy,
                     policy => new List<DatabaseScriptContainer> {
-                    new DatabaseScriptContainer("AlterClusterCapacityPolicy", 10, newCluster.CapacityPolicy!.ToUpdateScript())
+                    new DatabaseScriptContainer("AlterClusterCapacityPolicy", 10, policy.ToUpdateScript())
                     });
 
                 if (capacityPolicyChange != null)
@@ -43,18 +43,18 @@ namespace KustoSchemaTools.Changes
         /// <summary>
         /// Compares two policy objects property-by-property and returns a detailed change object.
         /// </summary>
-        private static IChange ComparePolicy<T>(string entityType, string entityName, T oldPolicy, T newPolicy, Func<T, List<DatabaseScriptContainer>> scriptGenerator) where T : class
+        private static IChange? ComparePolicy<T>(string entityType, string entityName, T? oldPolicy, T newPolicy, Func<T, List<DatabaseScriptContainer>> scriptGenerator) where T : class
         {
             if (newPolicy == null) return null;
 
             // Create the specialized change object that can hold property-level diffs
-            var policyChange = new PolicyChange<T>(entityType, entityName, oldPolicy, newPolicy);
+            var policyChange = new PolicyChange<T>(entityType, entityName, oldPolicy!, newPolicy);
 
             // Use reflection to find all changed properties
             var properties = typeof(T).GetProperties().Where(p => p.CanRead && p.CanWrite);
             foreach (var prop in properties)
             {
-                var oldValue = prop.GetValue(oldPolicy);
+                var oldValue = oldPolicy != null ? prop.GetValue(oldPolicy) : null;
                 var newValue = prop.GetValue(newPolicy);
 
                 // Only consider properties set in the new policy for changes

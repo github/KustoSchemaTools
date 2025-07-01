@@ -396,5 +396,232 @@ namespace KustoSchemaTools.Tests
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
         }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_ValidYamlFile_ReturnsChanges()
+        {
+            // Arrange
+            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            
+            // Set up mocks for the clusters defined in the YAML file
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
+            var kustoCluster1 = new Cluster
+            {
+                Name = "test1",
+                CapacityPolicy = new ClusterCapacityPolicy
+                {
+                    IngestionCapacity = new IngestionCapacity
+                    {
+                        ClusterMaximumConcurrentOperations = 300, // Different from YAML
+                        CoreUtilizationCoefficient = 0.5
+                    }
+                }
+            };
+            
+            kustoClusterHandlerFactoryMock
+                .Setup(f => f.Create("test1", "test1.eastus"))
+                .Returns(kustoHandler1Mock.Object);
+            kustoHandler1Mock
+                .Setup(h => h.LoadAsync())
+                .ReturnsAsync(kustoCluster1);
+
+            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test2.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test2", "test2.eastus");
+            var kustoCluster2 = new Cluster
+            {
+                Name = "test2",
+                CapacityPolicy = new ClusterCapacityPolicy
+                {
+                    IngestionCapacity = new IngestionCapacity
+                    {
+                        ClusterMaximumConcurrentOperations = 500, // Same as YAML
+                        CoreUtilizationCoefficient = 0.8
+                    }
+                }
+            };
+            
+            kustoClusterHandlerFactoryMock
+                .Setup(f => f.Create("test2", "test2.eastus"))
+                .Returns(kustoHandler2Mock.Object);
+            kustoHandler2Mock
+                .Setup(h => h.LoadAsync())
+                .ReturnsAsync(kustoCluster2);
+
+            // Act
+            var changes = await orchestrator.GenerateChangesFromFileAsync(yamlFilePath);
+
+            // Assert
+            Assert.Equal(2, changes.Count);
+            
+            // test1 should have changes
+            var test1ChangeSet = changes.FirstOrDefault(c => c.Entity == "test1");
+            Assert.NotNull(test1ChangeSet);
+            Assert.NotEmpty(test1ChangeSet.Changes);
+            
+            // test2 should have no changes (same configuration)
+            var test2ChangeSet = changes.FirstOrDefault(c => c.Entity == "test2");
+            Assert.NotNull(test2ChangeSet);
+            Assert.Empty(test2ChangeSet.Changes);
+        }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_NonExistentFile_ThrowsFileNotFoundException()
+        {
+            // Arrange
+            var nonExistentFilePath = "non-existent-file.yml";
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<FileNotFoundException>(() => orchestrator.GenerateChangesFromFileAsync(nonExistentFilePath));
+            Assert.Contains("Clusters file not found", exception.Message);
+        }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_EmptyFile_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                // Create an empty file
+                await File.WriteAllTextAsync(tempFilePath, "");
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => orchestrator.GenerateChangesFromFileAsync(tempFilePath));
+                Assert.Contains("Clusters file is empty", exception.Message);
+            }
+            finally
+            {
+                File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_InvalidYaml_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                // Create a file with invalid YAML
+                await File.WriteAllTextAsync(tempFilePath, "invalid: yaml: content: [");
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => orchestrator.GenerateChangesFromFileAsync(tempFilePath));
+                Assert.Contains("Failed to parse clusters file", exception.Message);
+            }
+            finally
+            {
+                File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_ValidYamlWithEmptyConnections_ReturnsEmptyList()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                // Create a YAML file with empty connections
+                await File.WriteAllTextAsync(tempFilePath, "connections: []");
+
+                // Act
+                var changes = await orchestrator.GenerateChangesFromFileAsync(tempFilePath);
+
+                // Assert
+                Assert.Empty(changes);
+            }
+            finally
+            {
+                File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_VerifyLoggingCalled()
+        {
+            // Arrange
+            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            
+            // Set up a simple mock for the clusters
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
+            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test2.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test2", "test2.eastus");
+            
+            kustoClusterHandlerFactoryMock
+                .Setup(f => f.Create("test1", "test1.eastus"))
+                .Returns(kustoHandler1Mock.Object);
+            kustoClusterHandlerFactoryMock
+                .Setup(f => f.Create("test2", "test2.eastus"))
+                .Returns(kustoHandler2Mock.Object);
+            
+            kustoHandler1Mock
+                .Setup(h => h.LoadAsync())
+                .ReturnsAsync(new Cluster { Name = "test1" });
+            kustoHandler2Mock
+                .Setup(h => h.LoadAsync())
+                .ReturnsAsync(new Cluster { Name = "test2" });
+
+            // Act
+            await orchestrator.GenerateChangesFromFileAsync(yamlFilePath);
+
+            // Assert - Verify that loading logging was called
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Loading cluster configurations from file")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+
+            // Verify that loaded count logging was called
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Loaded 2 cluster configuration(s) from YAML file")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+
+            // Verify that individual cluster processing logging was called
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Generating cluster diff for test1")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Generating cluster diff for test2")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GenerateChangesFromFileAsync_LoadAsyncThrowsException_PropagatesException()
+        {
+            // Arrange
+            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
+            
+            kustoClusterHandlerFactoryMock
+                .Setup(f => f.Create("test1", "test1.eastus"))
+                .Returns(kustoHandler1Mock.Object);
+            
+            kustoHandler1Mock
+                .Setup(h => h.LoadAsync())
+                .ThrowsAsync(new Exception("Kusto connection failed"));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => orchestrator.GenerateChangesFromFileAsync(yamlFilePath));
+            Assert.Equal("Kusto connection failed", exception.Message);
+        }
     }
 }

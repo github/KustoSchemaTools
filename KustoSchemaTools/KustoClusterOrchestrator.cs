@@ -45,5 +45,31 @@ namespace KustoSchemaTools
 
             return allChanges;
         }
+
+        /// <summary>
+        /// Loads cluster configurations from a YAML file and generates changes by comparing 
+        /// them with the live Kusto clusters.
+        /// </summary>
+        /// <param name="clusterConfigFilePath">The path to the YAML file containing cluster configurations.</param>
+        /// <returns>A list of ClusterChangeSet objects representing the detected changes.</returns>
+        public async Task<List<ClusterChangeSet>> GenerateChangesFromFileAsync(string clusterConfigFilePath)
+        {
+            Log.LogInformation($"Loading cluster configurations from file: {clusterConfigFilePath}");
+
+            // Load clusters from YAML file
+            var yamlHandler = new YamlClusterHandler(clusterConfigFilePath);
+            var clusterList = await yamlHandler.LoadAsync();
+
+            // Create Clusters object from the loaded list
+            var clusters = new Clusters
+            {
+                Connections = clusterList
+            };
+
+            Log.LogInformation($"Loaded {clusterList.Count} cluster configuration(s) from YAML file");
+
+            // Generate changes using the existing method
+            return await GenerateChangesAsync(clusters);
+        }
     }
 }
