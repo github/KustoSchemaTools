@@ -29,7 +29,7 @@ namespace KustoSchemaTools.Tests
             // Create mock for KustoClusterHandler
             var kustoClientMock = new Mock<KustoClient>("test.eastus");
             var kustoLoggerMock = new Mock<ILogger<KustoClusterHandler>>();
-            kustoHandlerMock = new Mock<KustoClusterHandler>(kustoClientMock.Object, kustoLoggerMock.Object);
+            kustoHandlerMock = new Mock<KustoClusterHandler>(kustoClientMock.Object, kustoLoggerMock.Object, "test", "test.eastus");
             
             orchestrator = new KustoClusterOrchestrator(
                 loggerMock.Object,
@@ -56,7 +56,7 @@ namespace KustoSchemaTools.Tests
         {
             // Configure the handler factory to return our mock handler
             kustoClusterHandlerFactoryMock
-                .Setup(f => f.Create("test.eastus"))
+                .Setup(f => f.Create("test", "test.eastus"))
                 .Returns(kustoHandlerMock.Object);
                 
             // Set up the mock handler to return our test cluster
@@ -104,7 +104,7 @@ namespace KustoSchemaTools.Tests
         private void SetupMultipleClusterMocks()
         {
             // Mock for cluster1
-            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("cluster1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object);
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("cluster1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "cluster1", "cluster1.eastus");
             var kustoCluster1 = new Cluster
             {
                 Name = "cluster1",
@@ -119,14 +119,14 @@ namespace KustoSchemaTools.Tests
             };
             
             kustoClusterHandlerFactoryMock
-                .Setup(f => f.Create("cluster1.eastus"))
+                .Setup(f => f.Create("cluster1", "cluster1.eastus"))
                 .Returns(kustoHandler1Mock.Object);
             kustoHandler1Mock
                 .Setup(h => h.LoadAsync())
                 .ReturnsAsync(kustoCluster1);
 
             // Mock for cluster2 - same as config, no changes
-            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("cluster2.westus").Object, new Mock<ILogger<KustoClusterHandler>>().Object);
+            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("cluster2.westus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "cluster2", "cluster2.westus");
             var kustoCluster2 = new Cluster
             {
                 Name = "cluster2",
@@ -141,7 +141,7 @@ namespace KustoSchemaTools.Tests
             };
             
             kustoClusterHandlerFactoryMock
-                .Setup(f => f.Create("cluster2.westus"))
+                .Setup(f => f.Create("cluster2", "cluster2.westus"))
                 .Returns(kustoHandler2Mock.Object);
             kustoHandler2Mock
                 .Setup(h => h.LoadAsync())
@@ -307,7 +307,7 @@ namespace KustoSchemaTools.Tests
             var clusters = CreateClustersWithCapacityPolicy();
             
             kustoClusterHandlerFactoryMock
-                .Setup(f => f.Create("test.eastus"))
+                .Setup(f => f.Create("test", "test.eastus"))
                 .Returns(kustoHandlerMock.Object);
             
             kustoHandlerMock
@@ -371,7 +371,7 @@ namespace KustoSchemaTools.Tests
             await orchestrator.GenerateChangesAsync(clusters);
 
             // Assert
-            kustoClusterHandlerFactoryMock.Verify(f => f.Create("test.eastus"), Times.Once);
+            kustoClusterHandlerFactoryMock.Verify(f => f.Create("test", "test.eastus"), Times.Once);
             kustoHandlerMock.Verify(h => h.LoadAsync(), Times.Once);
         }
 

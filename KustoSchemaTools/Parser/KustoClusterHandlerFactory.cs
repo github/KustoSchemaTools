@@ -12,11 +12,11 @@ namespace KustoSchemaTools
             _loggerFactory = loggerFactory;
         }
 
-        public virtual KustoClusterHandler Create(string clusterUrl)
+        public virtual KustoClusterHandler Create(string clusterName, string clusterUrl)
         {
             var client = new KustoClient(clusterUrl);
             var logger = _loggerFactory.CreateLogger<KustoClusterHandler>();
-            return new KustoClusterHandler(client, logger);
+            return new KustoClusterHandler(client, logger, clusterName, clusterUrl);
         }
     }
 }

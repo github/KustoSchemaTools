@@ -35,7 +35,7 @@ namespace KustoSchemaTools
                 Log.LogInformation($"Generating cluster diff for {cluster.Name}");
 
                 // Load the "old" schema from the live Kusto cluster
-                var kustoHandler = KustoClusterHandlerFactory.Create(cluster.Url);
+                var kustoHandler = KustoClusterHandlerFactory.Create(cluster.Name, cluster.Url);
                 var kustoCluster = await kustoHandler.LoadAsync();
 
                 // Compare the live state with the proposed new configuration and generate a change object

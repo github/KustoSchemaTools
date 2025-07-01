@@ -52,13 +52,13 @@ namespace KustoSchemaTools.Tests.Changes
 
             // Asserts that there is exactly one property change detected.
             // Because a nested property changed, the top-level property containing it is marked as changed.
-            var propertyChange = Assert.Single(policyChange.PropertyChanges);
+            var propertyChange = Assert.Single(policyChange!.PropertyChanges);
             Assert.Equal("MaterializedViewsCapacity", propertyChange.PropertyName);
             Assert.Equal("{\"ClusterMaximumConcurrentOperations\":1,\"ExtentsRebuildCapacity\":{\"ClusterMaximumConcurrentOperations\":2,\"MaximumConcurrentOperationsPerNode\":3}}", propertyChange.OldValue);
             Assert.Equal("{\"ClusterMaximumConcurrentOperations\":1,\"ExtentsRebuildCapacity\":{\"ClusterMaximumConcurrentOperations\":2,\"MaximumConcurrentOperationsPerNode\":5}}", propertyChange.NewValue);
 
             // Assert that the correct script is generated
-            var expectedScript = newCluster.CapacityPolicy.ToUpdateScript();
+            var expectedScript = newCluster.CapacityPolicy!.ToUpdateScript();
             var actualScriptContainer = Assert.Single(changeSet.Scripts);
             Assert.Equal(expectedScript, actualScriptContainer.Script.Text);
         }
@@ -76,7 +76,7 @@ namespace KustoSchemaTools.Tests.Changes
             // Assert
             var policyChange = Assert.Single(changeSet.Changes) as PolicyChange<ClusterCapacityPolicy>;
             Assert.NotNull(policyChange);
-            Assert.Equal(2, policyChange.PropertyChanges.Count);
+            Assert.Equal(2, policyChange!.PropertyChanges.Count);
 
             var ingestionChange = Assert.Single(policyChange.PropertyChanges, p => p.PropertyName == "IngestionCapacity");
             Assert.Equal("{\"CoreUtilizationCoefficient\":0.75}", ingestionChange.OldValue);
@@ -87,7 +87,7 @@ namespace KustoSchemaTools.Tests.Changes
             Assert.Equal("{\"ClusterMaximumConcurrentOperations\":20}", mvChange.NewValue);
 
             // Assert that the correct script is generated
-            var expectedScript = newCluster.CapacityPolicy.ToUpdateScript();
+            var expectedScript = newCluster.CapacityPolicy!.ToUpdateScript();
             var actualScriptContainer = Assert.Single(changeSet.Scripts);
             Assert.Equal(expectedScript, actualScriptContainer.Script.Text);
         }

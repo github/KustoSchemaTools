@@ -5,6 +5,7 @@ using Kusto.Data.Common;
 using Newtonsoft.Json;
 using System.Data;
 using KustoSchemaTools.Parser;
+using Kusto.Language.Syntax;
 
 namespace KustoSchemaTools
 {
@@ -12,16 +13,21 @@ namespace KustoSchemaTools
     {
         private readonly KustoClient _client;
         private readonly ILogger<KustoClusterHandler> _logger;
+        private readonly string _clusterName;
+        private readonly string _clusterUrl;
 
-        public KustoClusterHandler(KustoClient client, ILogger<KustoClusterHandler> logger)
+        public KustoClusterHandler(KustoClient client, ILogger<KustoClusterHandler> logger, string clusterName, string clusterUrl)
         {
             _client = client;
             _logger = logger;
+            _clusterName = clusterName;
+            _clusterUrl = clusterUrl;
         }
 
         public virtual async Task<Cluster> LoadAsync()
         {
-            var cluster = new Cluster();
+            var cluster = new Cluster { Name = _clusterName, Url = _clusterUrl };
+
             _logger.LogInformation("Loading cluster capacity policy...");
 
             try

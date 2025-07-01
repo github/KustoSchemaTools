@@ -14,7 +14,7 @@ namespace KustoSchemaTools.Tests.Parser
         public async Task LoadAsync_ValidYamlFile_ReturnsClustersList()
         {
             // Arrange
-            var testFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            var testFilePath = Path.Join("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
             var handler = new YamlClusterHandler(testFilePath);
 
             // Act

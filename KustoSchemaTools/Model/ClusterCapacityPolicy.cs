@@ -73,13 +73,6 @@ namespace KustoSchemaTools.Model
         {
             var json = ToJson();
             var script = $".alter-merge cluster policy capacity ```{json}```";
-            var parsedScript = KustoCode.Parse(script);
-            var diagnostics = parsedScript.GetDiagnostics();
-            if (diagnostics.Any())
-            {
-                Console.WriteLine($"Generated script: {diagnostics[0]}");
-
-            }
             return script;
         }
     }
