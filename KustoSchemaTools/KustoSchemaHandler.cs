@@ -108,8 +108,7 @@ namespace KustoSchemaTools
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
-            var escapedDbName = databaseName.BracketIfIdentifier();
-            var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, escapedDbName);
+            var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, databaseName);
 
             var db = await dbHandler.LoadAsync();
             if (includeColumns == false)
@@ -130,7 +129,6 @@ namespace KustoSchemaTools
             var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
-            var escapedDbName = databaseName.BracketIfIdentifier();
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
             var yamlDb = await yamlHandler.LoadAsync();
 
@@ -140,10 +138,10 @@ namespace KustoSchemaTools
             {
                 try
                 {
-                    Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{escapedDbName}");
-                    var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, escapedDbName);
+                    Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
+                    var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
                     await dbHandler.WriteAsync(yamlDb);
-                    results.TryAdd(cluster.Url, null);
+                    results.TryAdd(cluster.Url, null!);
                 }
                 catch (Exception ex)
                 {
