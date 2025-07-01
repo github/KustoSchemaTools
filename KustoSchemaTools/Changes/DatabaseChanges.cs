@@ -1,6 +1,7 @@
 ﻿using Kusto.Cloud.Platform.Utils;
 using Kusto.Language;
 using KustoSchemaTools.Model;
+using KustoSchemaTools.Parser;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Text;
@@ -173,7 +174,7 @@ namespace KustoSchemaTools.Changes
 
 
 
-        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState,Func<Database,Dictionary<string,T>> entitySelector,string entityName, ILogger log, Func<T?,T,bool> validator = null) where T: IKustoBaseEntity
+        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState,Func<Database,Dictionary<string,T>> entitySelector,string entityName, ILogger log, Func<T?,T,bool>? validator = null) where T: IKustoBaseEntity
         {
             var tmp = new List<IChange>();
             var existing = entitySelector(oldState) ?? new Dictionary<string, T>();
@@ -228,7 +229,7 @@ namespace KustoSchemaTools.Changes
                 var kind = newState.Permissions.ModificationKind.ToString().ToLower();
                 result.Add(new BasicChange("FollowerDatabase", "PermissionsModificationKind", $" Change Permission-Modification-Kind from {oldState.Permissions.ModificationKind} to {newState.Permissions.ModificationKind}", new List<DatabaseScriptContainer>
                 {
-                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} principals-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
+                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName.BracketIfIdentifier()} principals-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
                 }));
             }
             if (oldState.Cache.ModificationKind != newState.Cache.ModificationKind)
@@ -236,7 +237,7 @@ namespace KustoSchemaTools.Changes
                 var kind = newState.Cache.ModificationKind.ToString().ToLower();
                 result.Add(new BasicChange("FollowerDatabase", "ChangeModificationKind", $"Change Caching-Modification-Kind from {oldState.Cache.ModificationKind} to {newState.Cache.ModificationKind}", new List<DatabaseScriptContainer>
                 {
-                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} caching-policies-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
+                    new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName.BracketIfIdentifier()} caching-policies-modification-kind = {kind}", 0), "FollowerChangePolicyModificationKind")
                 }));
             }
 
@@ -246,14 +247,14 @@ namespace KustoSchemaTools.Changes
                 {
                     result.Add(new BasicChange("FollowerDatabase", "ChangeDefaultHotCache", $"From {oldState.Cache.DefaultHotCache} to {newState.Cache.DefaultHotCache}", new List<DatabaseScriptContainer>
                     {
-                        new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} policy caching hot = {newState.Cache.DefaultHotCache}", 0), "FollowerChangeDefaultHotCache")
+                        new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName.BracketIfIdentifier()} policy caching hot = {newState.Cache.DefaultHotCache}", 0), "FollowerChangeDefaultHotCache")
                     }));
                 }
                 else
                 {
                     result.Add(new BasicChange("FollowerDatabase", "DeleteDefaultHotCache", $"Remove Default Hot Cache", new List<DatabaseScriptContainer>
                     {
-                        new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName} policy caching", 0), "FollowerDeleteDefaultHotCache")
+                        new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName.BracketIfIdentifier()} policy caching", 0), "FollowerDeleteDefaultHotCache")
                     }));
                 }
             }
@@ -281,7 +282,7 @@ namespace KustoSchemaTools.Changes
                 new
                 {
                     Name = itm,
-                    Script = new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName} {kustoType} {itm} policy caching", 0), $"FollowerDelete{type}CachingPolicies")
+                    Script = new DatabaseScriptContainer(new DatabaseScript($".delete follower database {newState.DatabaseName.BracketIfIdentifier()} {kustoType} {itm} policy caching", 0), $"FollowerDelete{type}CachingPolicies")
                 })
                 .ToList();
             var changedPolicyScripts = newEntities
@@ -292,7 +293,7 @@ namespace KustoSchemaTools.Changes
                         Name = itm.Key,
                         From = oldEntities.ContainsKey(itm.Key) ? oldEntities[itm.Key] : "default",
                         To = itm.Value,
-                        Script = new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName} {kustoType} {itm.Key} policy caching hot = {itm.Value}", 0), $"FollowerChange{type}CachingPolicies")
+                        Script = new DatabaseScriptContainer(new DatabaseScript($".alter follower database {newState.DatabaseName.BracketIfIdentifier()} {kustoType} {itm.Key} policy caching hot = {itm.Value}", 0), $"FollowerChange{type}CachingPolicies")
                     })
                     .ToList();
 
