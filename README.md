@@ -6,6 +6,8 @@ A second project "[KustoSchemaToolsAction](https://github.com/github/KustoSchema
 
 ## Getting started
 
+### Database management
+
 The `database` object holds all schema related information for a Kusto database. It can be loaded from, or written to a cluster using the `KustoDatabaseHandler` which can be created by the `KustoDatabaseHandlerFactory`. There are several steps involved for loading all relevant information from a kusto database into the `database` object. These are covered by different plugins, which can be configured for the `KustoDatabaseHandlerFactory`. 
 
 ```csharp
@@ -33,6 +35,33 @@ var yamlFactory = new YamlDatabaseHandlerFactory()
 Additional features can be added with custom plugins. A sample for `table groups`, where some parts of the schema are defined once, but are applied for several tables can be found in [here](https://github.com/github/KustoSchemaToolsAction/blob/main/KustoSchemaCLI/Plugins/TableGroupPlugin.cs).
 
 The `KustoSchemaHandler` is the central place for synching schemas between yaml and a database. It offers functions for generating changes formatted in markdown, writing a database to yaml files and applying changes from yaml files to a database.
+
+### Cluster configuration management
+
+Cluster configuration changes are handled by the `KustoClusterOrchestrator`. Currently, the only supported feature is [`Capacity Policies`](https://learn.microsoft.com/en-us/kusto/management/capacity-policy?view=azure-data-explorer). The orchestrator expects a file path to a configuration file. A sample file could look like this:
+
+```yaml
+connections:
+- name: test
+  url: test.eastus
+  capacityPolicy:
+    ingestionCapacity:
+      clusterMaximumConcurrentOperations: 512
+      coreUtilizationCoefficient: 0.75
+    extentsMergeCapacity:
+      minimumConcurrentOperationsPerNode: 1
+      maximumConcurrentOperationsPerNode: 3
+    extentsPurgeRebuildCapacity:
+      maximumConcurrentOperationsPerNode: 1
+```
+
+The `KustoClusterOrchestrator` coordinates between cluster handlers to manage cluster configuration changes:
+
+1. **Loading Configuration**: Uses `YamlClusterHandler` to parse the YAML configuration file and load the desired cluster state
+2. **Reading Current State**: Uses `KustoClusterHandler` to connect to each live cluster and retrieve the current capacity policy settings
+3. **Generating Changes**: Compares the desired state (from YAML) with the current state (from Kusto) to identify differences
+4. **Creating Scripts**: Generates the necessary Kusto control commands (like `.alter-merge cluster policy capacity`) to apply the changes
+5. **Applying Updates**: Executes the generated scripts against the live clusters to synchronize them with the desired configuration
 
 ## Supported Features
 
