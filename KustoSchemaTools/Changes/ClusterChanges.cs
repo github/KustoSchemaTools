@@ -54,32 +54,29 @@ namespace KustoSchemaTools.Changes
         private static IChange? ComparePolicy<T>(string entityType, string entityName, T? oldPolicy, T newPolicy, Func<T, List<DatabaseScriptContainer>> scriptGenerator) where T : class
         {
             if (newPolicy == null) return null;
+            if (newPolicy.Equals(oldPolicy)) return null;
 
-            // Create the specialized change object that can hold property-level diffs
             var policyChange = new PolicyChange<T>(entityType, entityName, oldPolicy!, newPolicy);
 
-            // Use reflection to find all changed properties
+            var changedProperties = new List<string>();
             var properties = typeof(T).GetProperties().Where(p => p.CanRead && p.CanWrite);
+            
             foreach (var prop in properties)
             {
                 var oldValue = oldPolicy != null ? prop.GetValue(oldPolicy) : null;
                 var newValue = prop.GetValue(newPolicy);
 
-                // Only consider properties set in the new policy for changes
                 if (newValue != null && !object.Equals(oldValue, newValue))
                 {
-                    policyChange.PropertyChanges.Add(new PropertyChange
-                    {
-                        PropertyName = prop.Name,
-                        OldValue = oldValue?.ToString() ?? "Not Set",
-                        NewValue = newValue.ToString()
-                    });
+                    var oldValueStr = oldValue?.ToString() ?? "Not Set";
+                    var newValueStr = newValue.ToString()!;
+                    changedProperties.Add($"- **{prop.Name}**: `{oldValueStr}` → `{newValueStr}`");
                 }
             }
 
-            // If any properties were changed, finalize the change object and return it
-            if (policyChange.PropertyChanges.Any())
+            if (changedProperties.Any())
             {
+                policyChange.Markdown = $"## {entityType} Changes\n\n{string.Join("\n", changedProperties)}";
                 policyChange.Scripts.AddRange(scriptGenerator(newPolicy));
                 return policyChange;
             }
