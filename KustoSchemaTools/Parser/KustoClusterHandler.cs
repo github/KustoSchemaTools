@@ -27,24 +27,17 @@ namespace KustoSchemaTools
 
             _logger.LogInformation("Loading cluster capacity policy...");
 
-            try
+            using (var reader = await _client.AdminClient.ExecuteControlCommandAsync("", ".show cluster policy capacity", new ClientRequestProperties()))
             {
-                using (var reader = await _client.AdminClient.ExecuteControlCommandAsync("", ".show cluster policy capacity", new ClientRequestProperties()))
+                if (reader.Read())
                 {
-                    if (reader.Read())
+                    var policyJson = reader["Policy"]?.ToString();
+                    if (!string.IsNullOrEmpty(policyJson))
                     {
-                        var policyJson = reader["Policy"]?.ToString();
-                        if (!string.IsNullOrEmpty(policyJson))
-                        {
-                            var policy = JsonConvert.DeserializeObject<ClusterCapacityPolicy>(policyJson);
-                            cluster.CapacityPolicy = policy;
-                        }
+                        var policy = JsonConvert.DeserializeObject<ClusterCapacityPolicy>(policyJson);
+                        cluster.CapacityPolicy = policy;
                     }
                 }
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "Failed to load cluster capacity policy.");
             }
 
             return cluster;
