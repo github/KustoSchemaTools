@@ -393,7 +393,7 @@ namespace KustoSchemaTools.Tests
         public async Task GenerateChangesFromFileAsync_ValidYamlFile_ReturnsChanges()
         {
             // Arrange
-            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            var yamlFilePath = Path.Join("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
             
             // Set up mocks for the clusters defined in the YAML file
             var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
