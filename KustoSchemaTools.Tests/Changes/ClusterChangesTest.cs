@@ -2,9 +2,6 @@ using KustoSchemaTools.Changes;
 using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json;
-using System.Linq;
-using Xunit;
 
 namespace KustoSchemaTools.Tests.Changes
 {

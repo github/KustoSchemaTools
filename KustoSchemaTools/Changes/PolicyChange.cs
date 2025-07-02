@@ -1,6 +1,3 @@
-using KustoSchemaTools.Model;
-using System.Collections.Generic;
-
 namespace KustoSchemaTools.Changes
 {
     public class PolicyChange<T> : BaseChange<T>

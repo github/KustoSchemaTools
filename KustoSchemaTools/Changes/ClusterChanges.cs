@@ -1,13 +1,25 @@
 using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using System.Linq;
 using Kusto.Language;
 
 namespace KustoSchemaTools.Changes
 {
     public class ClusterChanges
     {
+        /// <summary>
+        /// Compares two cluster configurations and generates a comprehensive change set
+        /// containing the differences and the scripts needed to apply those changes.
+        /// </summary>
+        /// <param name="oldCluster">The current/existing cluster configuration (typically from live cluster).</param>
+        /// <param name="newCluster">The desired cluster configuration (typically from YAML file).</param>
+        /// <param name="log">Logger instance for recording the comparison process and results.</param>
+        /// <returns>
+        /// A ClusterChangeSet containing:
+        /// - Detailed policy changes with before/after values
+        /// - Generated Kusto scripts to apply the changes
+        /// - Validation results for each script
+        /// </returns>
+        /// <exception cref="ArgumentException">Thrown when cluster names don't match between old and new configurations.</exception>
         public static ClusterChangeSet GenerateChanges(Cluster oldCluster, Cluster newCluster, ILogger log)
         {
             if (oldCluster.Name != newCluster.Name)
@@ -43,14 +55,28 @@ namespace KustoSchemaTools.Changes
             {
                 var code = KustoCode.Parse(script.Text);
                 var diagnostics = code.GetDiagnostics();
-                script.IsValid = diagnostics.Any() == false;
+                script.IsValid = !diagnostics.Any();
             }
             return changeSet;
         }
 
         /// <summary>
-        /// Compares two policy objects and returns a detailed change object.
+        /// Compares two policy objects of the same type using reflection to detect property-level changes.
+        /// Only properties that are non-null in the new policy and differ from the old policy are considered changes.
+        /// This approach aligns with Kusto's `.alter-merge` command behavior, which only modifies specified properties.
         /// </summary>
+        /// <typeparam name="T">The type of policy object to compare (must be a reference type).</typeparam>
+        /// <param name="entityType">The display name of the entity type for documentation purposes (e.g., "Cluster Capacity Policy").</param>
+        /// <param name="entityName">The name of the specific entity instance being compared (e.g., "default").</param>
+        /// <param name="oldPolicy">The existing policy configuration, or null if no policy was previously set.</param>
+        /// <param name="newPolicy">The desired policy configuration to compare against the old policy.</param>
+        /// <param name="scriptGenerator">A function that generates the Kusto scripts needed to apply the new policy.</param>
+        /// <returns>
+        /// An IChange object containing:
+        /// - Property-level change details in Markdown format
+        /// - Generated scripts to apply the changes
+        /// Returns null if no meaningful changes are detected.
+        /// </returns>
         private static IChange? ComparePolicy<T>(string entityType, string entityName, T? oldPolicy, T newPolicy, Func<T, List<DatabaseScriptContainer>> scriptGenerator) where T : class
         {
             if (newPolicy == null) return null;

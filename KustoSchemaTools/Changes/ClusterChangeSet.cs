@@ -1,6 +1,4 @@
 using KustoSchemaTools.Model;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace KustoSchemaTools.Changes
 {
@@ -12,7 +10,7 @@ namespace KustoSchemaTools.Changes
     {
         /// <summary>
         /// A list of specific, granular changes detected for the cluster's policies.
-        /// Each item is typically a BaseChange&lt;T&gt; for a specific policy type.
+        /// Each item is typically a BaseChange for a specific policy type.
         /// </summary>
         public List<IChange> Changes { get; } = new List<IChange>();
 
