@@ -2,6 +2,7 @@ using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Linq;
+using Kusto.Language;
 
 namespace KustoSchemaTools.Changes
 {
@@ -16,7 +17,6 @@ namespace KustoSchemaTools.Changes
             var clusterName = oldCluster.Name;
             var changeSet = new ClusterChangeSet(clusterName, oldCluster, newCluster);
 
-            // 1. Get capacity policy changes
             log.LogInformation($"Analyzing capacity policy changes for cluster {clusterName}...");
             if (newCluster.CapacityPolicy == null) {
                 log.LogInformation("No capacity policy defined in the new cluster configuration.");
@@ -27,7 +27,7 @@ namespace KustoSchemaTools.Changes
                     oldCluster.CapacityPolicy,
                     newCluster.CapacityPolicy,
                     policy => new List<DatabaseScriptContainer> {
-                    new DatabaseScriptContainer("AlterClusterCapacityPolicy", 10, policy.ToUpdateScript())
+                    new DatabaseScriptContainer("AlterMergeClusterCapacityPolicy", 10, policy.ToUpdateScript())
                     });
 
                 if (capacityPolicyChange != null)
@@ -37,6 +37,14 @@ namespace KustoSchemaTools.Changes
             }
 
             changeSet.Scripts.AddRange(changeSet.Changes.SelectMany(c => c.Scripts));
+
+            // Run Kusto code diagnostics
+            foreach (var script in changeSet.Scripts)
+            {
+                var code = KustoCode.Parse(script.Text);
+                var diagnostics = code.GetDiagnostics();
+                script.IsValid = diagnostics.Any() == false;
+            }
             return changeSet;
         }
 
