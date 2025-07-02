@@ -204,10 +204,6 @@ namespace KustoSchemaTools.Tests
             Assert.NotEmpty(changeSet.Changes);
             Assert.Single(changeSet.Changes);
             var policyChange = Assert.IsType<PolicyChange<ClusterCapacityPolicy>>(changeSet.Changes[0]);
-            // Assert.Single(policyChange.PropertyChanges);
-            // var propertyChange = Assert.Single(policyChange.PropertyChanges);
-            // Assert.Equal("IngestionCapacity", propertyChange.PropertyName);
-            // Assert.NotEqual(propertyChange.OldValue, propertyChange.NewValue);
             Assert.NotEmpty(policyChange.Scripts);
         }
 
@@ -269,10 +265,6 @@ namespace KustoSchemaTools.Tests
             Assert.NotNull(cluster1ChangeSet);
             Assert.NotEmpty(cluster1ChangeSet.Changes);
             Assert.Single(cluster1ChangeSet.Changes);
-            
-            var cluster1PolicyChange = Assert.IsType<PolicyChange<ClusterCapacityPolicy>>(cluster1ChangeSet.Changes[0]);
-            // Assert.Single(cluster1PolicyChange.PropertyChanges);
-            // Assert.Equal("IngestionCapacity", cluster1PolicyChange.PropertyChanges[0].PropertyName);
             
             // Second cluster should have no changes
             var cluster2ChangeSet = changes.FirstOrDefault(c => c.Entity == "cluster2");

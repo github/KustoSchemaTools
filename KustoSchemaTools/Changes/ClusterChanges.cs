@@ -49,7 +49,7 @@ namespace KustoSchemaTools.Changes
         }
 
         /// <summary>
-        /// Compares two policy objects property-by-property and returns a detailed change object.
+        /// Compares two policy objects and returns a detailed change object.
         /// </summary>
         private static IChange? ComparePolicy<T>(string entityType, string entityName, T? oldPolicy, T newPolicy, Func<T, List<DatabaseScriptContainer>> scriptGenerator) where T : class
         {
