@@ -1,4 +1,5 @@
 ﻿using KustoSchemaTools.Changes;
+using KustoSchemaTools.Parser;
 using System.Diagnostics.CodeAnalysis;
 
 namespace KustoSchemaTools.Model
@@ -36,5 +37,6 @@ namespace KustoSchemaTools.Model
 
         public Dictionary<string, FollowerDatabase> Followers { get; set; } = new Dictionary<string, FollowerDatabase>();
 
+        public string EscapedName => Name.BracketIfIdentifier();
     }
 }
