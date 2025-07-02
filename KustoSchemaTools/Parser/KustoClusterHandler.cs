@@ -1,11 +1,8 @@
 using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 using Kusto.Data.Common;
 using Newtonsoft.Json;
-using System.Data;
 using KustoSchemaTools.Parser;
-using Kusto.Language.Syntax;
 
 namespace KustoSchemaTools
 {

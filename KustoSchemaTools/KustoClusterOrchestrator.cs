@@ -7,14 +7,16 @@ namespace KustoSchemaTools
 {
     public class KustoClusterOrchestrator
     {
-        public KustoClusterOrchestrator(ILogger<KustoClusterOrchestrator> logger, IKustoClusterHandlerFactory kustoClusterHandlerFactory)
+        public KustoClusterOrchestrator(ILogger<KustoClusterOrchestrator> logger, IKustoClusterHandlerFactory kustoClusterHandlerFactory, IYamlClusterHandlerFactory yamlClusterHandlerFactory)
         {
             Log = logger;
             KustoClusterHandlerFactory = kustoClusterHandlerFactory;
+            YamlClusterHandlerFactory = yamlClusterHandlerFactory;
         }
 
         public ILogger Log { get; }
         public IKustoClusterHandlerFactory KustoClusterHandlerFactory { get; }
+        public IYamlClusterHandlerFactory YamlClusterHandlerFactory { get; }
 
         /// <summary>
         /// Generates changes by comparing the provided cluster configurations with their 
@@ -52,7 +54,7 @@ namespace KustoSchemaTools
         {
             Log.LogInformation($"Loading cluster configurations from file: {clusterConfigFilePath}");
 
-            var yamlHandler = new YamlClusterHandler(clusterConfigFilePath);
+            var yamlHandler = YamlClusterHandlerFactory.Create(clusterConfigFilePath);
             var clusterList = await yamlHandler.LoadAsync();
             var clusters = new Clusters
             {

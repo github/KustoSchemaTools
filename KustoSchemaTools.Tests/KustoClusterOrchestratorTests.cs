@@ -18,6 +18,7 @@ namespace KustoSchemaTools.Tests
     {
         private readonly Mock<ILogger<KustoClusterOrchestrator>> loggerMock;
         private readonly Mock<IKustoClusterHandlerFactory> kustoClusterHandlerFactoryMock;
+        private readonly Mock<IYamlClusterHandlerFactory> yamlClusterHandlerFactoryMock;
         private readonly Mock<KustoClusterHandler> kustoHandlerMock;
         private readonly KustoClusterOrchestrator orchestrator;
 
@@ -25,6 +26,7 @@ namespace KustoSchemaTools.Tests
         {
             loggerMock = new Mock<ILogger<KustoClusterOrchestrator>>();
             kustoClusterHandlerFactoryMock = new Mock<IKustoClusterHandlerFactory>();
+            yamlClusterHandlerFactoryMock = new Mock<IYamlClusterHandlerFactory>();
             
             // Create mock for KustoClusterHandler
             var kustoClientMock = new Mock<KustoClient>("test.eastus");
@@ -33,7 +35,8 @@ namespace KustoSchemaTools.Tests
             
             orchestrator = new KustoClusterOrchestrator(
                 loggerMock.Object,
-                kustoClusterHandlerFactoryMock.Object);
+                kustoClusterHandlerFactoryMock.Object,
+                yamlClusterHandlerFactoryMock.Object);
         }
 
         private Clusters CreateClustersWithCapacityPolicy(ClusterCapacityPolicy? capacityPolicy = null)
@@ -393,7 +396,12 @@ namespace KustoSchemaTools.Tests
         public async Task GenerateChangesFromFileAsync_ValidYamlFile_ReturnsChanges()
         {
             // Arrange
-            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            var yamlFilePath = Path.Join("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            
+            // Setup the yaml handler factory to return a real YamlClusterHandler
+            yamlClusterHandlerFactoryMock
+                .Setup(f => f.Create(yamlFilePath))
+                .Returns(new YamlClusterHandler(yamlFilePath));
             
             // Set up mocks for the clusters defined in the YAML file
             var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
@@ -460,6 +468,11 @@ namespace KustoSchemaTools.Tests
         {
             // Arrange
             var nonExistentFilePath = "non-existent-file.yml";
+            
+            // Setup the yaml handler factory to return a real YamlClusterHandler
+            yamlClusterHandlerFactoryMock
+                .Setup(f => f.Create(nonExistentFilePath))
+                .Returns(new YamlClusterHandler(nonExistentFilePath));
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<FileNotFoundException>(() => orchestrator.GenerateChangesFromFileAsync(nonExistentFilePath));
@@ -475,6 +488,11 @@ namespace KustoSchemaTools.Tests
             {
                 // Create an empty file
                 await File.WriteAllTextAsync(tempFilePath, "");
+                
+                // Setup the yaml handler factory to return a real YamlClusterHandler
+                yamlClusterHandlerFactoryMock
+                    .Setup(f => f.Create(tempFilePath))
+                    .Returns(new YamlClusterHandler(tempFilePath));
 
                 // Act & Assert
                 var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => orchestrator.GenerateChangesFromFileAsync(tempFilePath));
@@ -495,6 +513,11 @@ namespace KustoSchemaTools.Tests
             {
                 // Create a file with invalid YAML
                 await File.WriteAllTextAsync(tempFilePath, "invalid: yaml: content: [");
+                
+                // Setup the yaml handler factory to return a real YamlClusterHandler
+                yamlClusterHandlerFactoryMock
+                    .Setup(f => f.Create(tempFilePath))
+                    .Returns(new YamlClusterHandler(tempFilePath));
 
                 // Act & Assert
                 var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => orchestrator.GenerateChangesFromFileAsync(tempFilePath));
@@ -515,6 +538,11 @@ namespace KustoSchemaTools.Tests
             {
                 // Create a YAML file with empty connections
                 await File.WriteAllTextAsync(tempFilePath, "connections: []");
+                
+                // Setup the yaml handler factory to return a real YamlClusterHandler
+                yamlClusterHandlerFactoryMock
+                    .Setup(f => f.Create(tempFilePath))
+                    .Returns(new YamlClusterHandler(tempFilePath));
 
                 // Act
                 var changes = await orchestrator.GenerateChangesFromFileAsync(tempFilePath);
@@ -532,7 +560,12 @@ namespace KustoSchemaTools.Tests
         public async Task GenerateChangesFromFileAsync_VerifyLoggingCalled()
         {
             // Arrange
-            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            var yamlFilePath = Path.Join("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            
+            // Setup the yaml handler factory to return a real YamlClusterHandler
+            yamlClusterHandlerFactoryMock
+                .Setup(f => f.Create(yamlFilePath))
+                .Returns(new YamlClusterHandler(yamlFilePath));
             
             // Set up a simple mock for the clusters
             var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
@@ -599,7 +632,12 @@ namespace KustoSchemaTools.Tests
         public async Task GenerateChangesFromFileAsync_LoadAsyncThrowsException_PropagatesException()
         {
             // Arrange
-            var yamlFilePath = Path.Combine("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            var yamlFilePath = Path.Join("DemoData", "ClusterScopedChanges", "multipleClusters.yml");
+            
+            // Setup the yaml handler factory to return a real YamlClusterHandler
+            yamlClusterHandlerFactoryMock
+                .Setup(f => f.Create(yamlFilePath))
+                .Returns(new YamlClusterHandler(yamlFilePath));
             
             var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
             
