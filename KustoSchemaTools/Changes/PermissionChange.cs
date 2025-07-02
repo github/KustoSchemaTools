@@ -24,20 +24,20 @@ namespace KustoSchemaTools.Changes
             if (To.Count > 0)
             {
                 var x = string.Join(",", To.Select(a => "\"" + a.Id + "\""));
-                toScript = new DatabaseScript { Text = $".set database {Db} {Entity.ToLower()} ({x})", Order = 0 };
+                toScript = new DatabaseScript { Text = $".set database {Db.BracketIfIdentifier()} {Entity.ToLower()} ({x})", Order = 0 };
             }
             else
             {
-                toScript = new DatabaseScript { Text = $".set database {Db} {Entity.ToLower()} none", Order = 0 };
+                toScript = new DatabaseScript { Text = $".set database {Db.BracketIfIdentifier()} {Entity.ToLower()} none", Order = 0 };
             }
-            if (To.Count > 0)
+            if (From.Count > 0)
             {
                 var x = string.Join(",", From.Select(a => "\"" + a.Id + "\""));
-                fromScript = new DatabaseScript { Text = $".set database {Db} {Entity.ToLower()} ({x})", Order = 0 };
+                fromScript = new DatabaseScript { Text = $".set database {Db.BracketIfIdentifier()} {Entity.ToLower()} ({x})", Order = 0 };
             }
             else
             {
-                fromScript = new DatabaseScript { Text = $".set database {Db} {Entity.ToLower()} none", Order = 0 };
+                fromScript = new DatabaseScript { Text = $".set database {Db.BracketIfIdentifier()} {Entity.ToLower()} none", Order = 0 };
             }
 
 
