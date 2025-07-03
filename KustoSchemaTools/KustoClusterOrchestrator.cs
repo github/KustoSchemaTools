@@ -86,6 +86,12 @@ namespace KustoSchemaTools
             {
                 Log.LogInformation($"Applying changes to cluster: {changeSet.Entity}");
 
+                if (changeSet.Changes.Count == 0)
+                {
+                    Log.LogInformation($"No changes to apply for cluster: {changeSet.Entity}");
+                    continue;
+                }
+
                 var clusterName = changeSet.To.Name;
                 var clusterUrl = changeSet.To.Url;
 
