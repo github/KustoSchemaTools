@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using KustoSchemaTools.Parser;
 using KustoSchemaTools.Changes;
 using Kusto.Data;
+using System.Text;
 
 namespace KustoSchemaTools
 {
@@ -54,47 +55,25 @@ namespace KustoSchemaTools
                 .OrderBy(itm => itm.Order)
                 .ToList();
 
-            var results = new List<ScriptExecuteCommandResult>();
-
-            foreach (var script in scripts)
-            {
-                var asyncResult = await ExecuteAsyncCommand(script.Text);
-                results.Add(asyncResult);
-            }
-
-            return results;
+            var result = await ExecuteClusterScriptAsync(scripts);
+            return result;
         }
 
-        private async Task<ScriptExecuteCommandResult> ExecuteAsyncCommand(string scriptText)
+        private async Task<List<ScriptExecuteCommandResult>> ExecuteClusterScriptAsync(List<DatabaseScriptContainer> scripts)
         {
-            var interval = TimeSpan.FromSeconds(5);
-            var iterations = (int)(TimeSpan.FromHours(1) / interval);
-            var result = await _client.AdminClient.ExecuteControlCommandAsync("", scriptText);
-            var operationId = result.ToScalar<Guid>();
-            var finalState = false;
-            string monitoringCommand = $".show operations | where OperationId ==  '{operationId}' " +
-                "| summarize arg_max(LastUpdatedOn, *) by OperationId " +
-                "| project OperationId, CommandType = Operation, Result = State, Reason = Status";
-            int cnt = 0;
-            while (!finalState)
+            if (scripts.Count == 0)
             {
-                if (cnt++ >= iterations)
-                {
-                    finalState = true;
-                }
-
-                _logger.LogInformation($"Waiting for operation {operationId} to complete... current iteration: {cnt}/{iterations}");
-                var monitoringResult = _client.Client.ExecuteQuery(monitoringCommand, new ClientRequestProperties());
-                var operationState = monitoringResult.As<ScriptExecuteCommandResult>().FirstOrDefault();
-
-                if (operationState != null && operationState?.IsFinal() == true)
-                {
-                    operationState.CommandText = scriptText;
-                    return operationState;
-                }
-                await Task.Delay(interval);
+                return new List<ScriptExecuteCommandResult>();
             }
-            throw new Exception("Operation did not complete in a reasonable time");
+
+            var scriptTexts = scripts.Select(script => script.Text);
+            var script = ".execute cluster script with(ContinueOnErrors = true) <|" + Environment.NewLine + 
+                        string.Join(Environment.NewLine, scriptTexts);
+
+            _logger.LogInformation($"Applying cluster script:\n{script}");
+            
+            var result = await _client.AdminClient.ExecuteControlCommandAsync("", script);
+            return result.As<ScriptExecuteCommandResult>();
         }
     }
 }
