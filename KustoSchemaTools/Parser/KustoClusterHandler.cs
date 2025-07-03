@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using KustoSchemaTools.Parser;
 using KustoSchemaTools.Changes;
 using Kusto.Data;
-using System.Text;
 
 namespace KustoSchemaTools
 {
@@ -18,10 +17,10 @@ namespace KustoSchemaTools
 
         public KustoClusterHandler(ICslAdminProvider adminClient, ILogger<KustoClusterHandler> logger, string clusterName, string clusterUrl)
         {
-            _adminClient = adminClient ?? throw new ArgumentNullException(nameof(adminClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _clusterName = clusterName ?? throw new ArgumentNullException(nameof(clusterName));
-            _clusterUrl = clusterUrl ?? throw new ArgumentNullException(nameof(clusterUrl));
+            _adminClient = adminClient;
+            _logger = logger;
+            _clusterName = clusterName;
+            _clusterUrl = clusterUrl;
         }
 
         public virtual async Task<Cluster> LoadAsync()
