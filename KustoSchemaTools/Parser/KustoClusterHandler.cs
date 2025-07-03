@@ -11,17 +11,17 @@ namespace KustoSchemaTools
 {
     public class KustoClusterHandler
     {
-        private readonly KustoClient _client;
+        private readonly ICslAdminProvider _adminClient;
         private readonly ILogger<KustoClusterHandler> _logger;
         private readonly string _clusterName;
         private readonly string _clusterUrl;
 
-        public KustoClusterHandler(KustoClient client, ILogger<KustoClusterHandler> logger, string clusterName, string clusterUrl)
+        public KustoClusterHandler(ICslAdminProvider adminClient, ILogger<KustoClusterHandler> logger, string clusterName, string clusterUrl)
         {
-            _client = client;
-            _logger = logger;
-            _clusterName = clusterName;
-            _clusterUrl = clusterUrl;
+            _adminClient = adminClient ?? throw new ArgumentNullException(nameof(adminClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _clusterName = clusterName ?? throw new ArgumentNullException(nameof(clusterName));
+            _clusterUrl = clusterUrl ?? throw new ArgumentNullException(nameof(clusterUrl));
         }
 
         public virtual async Task<Cluster> LoadAsync()
@@ -30,7 +30,7 @@ namespace KustoSchemaTools
 
             _logger.LogInformation("Loading cluster capacity policy...");
 
-            using (var reader = await _client.AdminClient.ExecuteControlCommandAsync("", ".show cluster policy capacity", new ClientRequestProperties()))
+            using (var reader = await _adminClient.ExecuteControlCommandAsync("", ".show cluster policy capacity", new ClientRequestProperties()))
             {
                 if (reader.Read())
                 {
@@ -72,7 +72,7 @@ namespace KustoSchemaTools
 
             _logger.LogInformation($"Applying cluster script:\n{script}");
             
-            var result = await _client.AdminClient.ExecuteControlCommandAsync("", script);
+            var result = await _adminClient.ExecuteControlCommandAsync("", script);
             return result.As<ScriptExecuteCommandResult>();
         }
     }

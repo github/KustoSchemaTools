@@ -16,7 +16,7 @@ namespace KustoSchemaTools
         {
             var client = new KustoClient(clusterUrl);
             var logger = _loggerFactory.CreateLogger<KustoClusterHandler>();
-            return new KustoClusterHandler(client, logger, clusterName, clusterUrl);
+            return new KustoClusterHandler(client.AdminClient, logger, clusterName, clusterUrl);
         }
     }
 }
