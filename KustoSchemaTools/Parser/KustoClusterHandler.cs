@@ -72,7 +72,7 @@ namespace KustoSchemaTools
 
             _logger.LogInformation($"Applying cluster script:\n{script}");
             
-            var result = await _adminClient.ExecuteControlCommandAsync("", script);
+            var result = await _adminClient.ExecuteControlCommandAsync("", script, new ClientRequestProperties());
             return result.As<ScriptExecuteCommandResult>();
         }
     }
