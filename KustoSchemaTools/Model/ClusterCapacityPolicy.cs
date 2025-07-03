@@ -19,6 +19,7 @@ namespace KustoSchemaTools.Model
         public StreamingIngestionPostProcessingCapacity? StreamingIngestionPostProcessingCapacity { get; set; }
         public PurgeStorageArtifactsCleanupCapacity? PurgeStorageArtifactsCleanupCapacity { get; set; }
         public PeriodicStorageArtifactsCleanupCapacity? PeriodicStorageArtifactsCleanupCapacity { get; set; }
+        public MirroringCapacity? MirroringCapacity { get; set; }
         public QueryAccelerationCapacity? QueryAccelerationCapacity { get; set; }
         public GraphSnapshotsCapacity? GraphSnapshotsCapacity { get; set; }
 
@@ -37,6 +38,7 @@ namespace KustoSchemaTools.Model
                 EqualityComparer<StreamingIngestionPostProcessingCapacity?>.Default.Equals(StreamingIngestionPostProcessingCapacity, other.StreamingIngestionPostProcessingCapacity) &&
                 EqualityComparer<PurgeStorageArtifactsCleanupCapacity?>.Default.Equals(PurgeStorageArtifactsCleanupCapacity, other.PurgeStorageArtifactsCleanupCapacity) &&
                 EqualityComparer<PeriodicStorageArtifactsCleanupCapacity?>.Default.Equals(PeriodicStorageArtifactsCleanupCapacity, other.PeriodicStorageArtifactsCleanupCapacity) &&
+                EqualityComparer<MirroringCapacity?>.Default.Equals(MirroringCapacity, other.MirroringCapacity) &&
                 EqualityComparer<QueryAccelerationCapacity?>.Default.Equals(QueryAccelerationCapacity, other.QueryAccelerationCapacity) &&
                 EqualityComparer<GraphSnapshotsCapacity?>.Default.Equals(GraphSnapshotsCapacity, other.GraphSnapshotsCapacity);
         }
@@ -55,6 +57,7 @@ namespace KustoSchemaTools.Model
             hc.Add(StreamingIngestionPostProcessingCapacity);
             hc.Add(PurgeStorageArtifactsCleanupCapacity);
             hc.Add(PeriodicStorageArtifactsCleanupCapacity);
+            hc.Add(MirroringCapacity);
             hc.Add(QueryAccelerationCapacity);
             hc.Add(GraphSnapshotsCapacity);
             return hc.ToHashCode();
@@ -192,40 +195,17 @@ namespace KustoSchemaTools.Model
 
     public class MaterializedViewsCapacity : IEquatable<MaterializedViewsCapacity>
     {
+        public int? ClusterMinimumConcurrentOperations { get; set; }
         public int? ClusterMaximumConcurrentOperations { get; set; }
-        public ExtentsRebuildCapacity? ExtentsRebuildCapacity { get; set; }
 
         public bool Equals(MaterializedViewsCapacity? other)
         {
             if (other is null) return false;
-            return ClusterMaximumConcurrentOperations == other.ClusterMaximumConcurrentOperations &&
-                   EqualityComparer<ExtentsRebuildCapacity?>.Default.Equals(ExtentsRebuildCapacity, other.ExtentsRebuildCapacity);
+            return ClusterMinimumConcurrentOperations == other.ClusterMinimumConcurrentOperations &&
+                   ClusterMaximumConcurrentOperations == other.ClusterMaximumConcurrentOperations;
         }
         public override bool Equals(object? obj) => Equals(obj as MaterializedViewsCapacity);
-        public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, ExtentsRebuildCapacity);
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Ignore,
-                Formatting = Formatting.None
-            });
-        }
-    }
-
-    public class ExtentsRebuildCapacity : IEquatable<ExtentsRebuildCapacity>
-    {
-        public int? ClusterMaximumConcurrentOperations { get; set; }
-        public int? MaximumConcurrentOperationsPerNode { get; set; }
-
-        public bool Equals(ExtentsRebuildCapacity? other)
-        {
-            if (other is null) return false;
-            return ClusterMaximumConcurrentOperations == other.ClusterMaximumConcurrentOperations &&
-                   MaximumConcurrentOperationsPerNode == other.MaximumConcurrentOperationsPerNode;
-        }
-        public override bool Equals(object? obj) => Equals(obj as ExtentsRebuildCapacity);
-        public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, MaximumConcurrentOperationsPerNode);
+        public override int GetHashCode() => HashCode.Combine(ClusterMinimumConcurrentOperations, ClusterMaximumConcurrentOperations);
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this, new JsonSerializerSettings
@@ -312,6 +292,29 @@ namespace KustoSchemaTools.Model
         }
         public override bool Equals(object? obj) => Equals(obj as PeriodicStorageArtifactsCleanupCapacity);
         public override int GetHashCode() => HashCode.Combine(MaximumConcurrentOperationsPerCluster);
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
+    }
+
+    public class MirroringCapacity : IEquatable<MirroringCapacity>
+    {
+        public int? ClusterMaximumConcurrentOperations { get; set; }
+        public double? CoreUtilizationCoefficient { get; set; }
+
+        public bool Equals(MirroringCapacity? other)
+        {
+            if (other is null) return false;
+            return ClusterMaximumConcurrentOperations == other.ClusterMaximumConcurrentOperations &&
+                   CoreUtilizationCoefficient == other.CoreUtilizationCoefficient;
+        }
+        public override bool Equals(object? obj) => Equals(obj as MirroringCapacity);
+        public override int GetHashCode() => HashCode.Combine(ClusterMaximumConcurrentOperations, CoreUtilizationCoefficient);
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this, new JsonSerializerSettings
