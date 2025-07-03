@@ -63,6 +63,7 @@ namespace KustoSchemaTools
         {
             if (scripts.Count == 0)
             {
+                _logger.LogInformation("No scripts to execute.");
                 return new List<ScriptExecuteCommandResult>();
             }
 

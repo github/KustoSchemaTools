@@ -81,14 +81,8 @@ namespace KustoSchemaTools
             var changeSets = await GenerateChangesFromFileAsync(clusterConfigFilePath);
             var allResults = new List<ScriptExecuteCommandResult>();
 
-            if (!changeSets.Any(cs => cs.Changes.SelectMany(itm => itm.Scripts).Where(itm => itm.Order >= 0).Where(itm => itm.IsValid == true).Any()))
-            {
-                Log.LogInformation("No changes detected to apply.");
-                return allResults;
-            }
-
             // Apply changes for each cluster
-            foreach (var changeSet in changeSets.Where(cs => cs.Changes.SelectMany(itm => itm.Scripts).Where(itm => itm.Order >= 0).Where(itm => itm.IsValid == true).Any()))
+            foreach (var changeSet in changeSets)
             {
                 Log.LogInformation($"Applying changes to cluster: {changeSet.Entity}");
 
