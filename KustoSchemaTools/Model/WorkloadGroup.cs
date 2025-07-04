@@ -4,68 +4,36 @@ using System.Linq;
 
 namespace KustoSchemaTools.Model
 {
-    /// <summary>
-    /// Types of rate limiting available for workload groups
-    /// </summary>
     public enum RateLimitKind
     {
-        /// <summary>
-        /// Limits the number of concurrent requests
-        /// </summary>
         ConcurrentRequests,
-        
-        /// <summary>
-        /// Limits resource utilization (CPU, memory, etc.)
-        /// </summary>
         ResourceUtilization
     }
 
-    /// <summary>
-    /// Scope of rate limiting
-    /// </summary>
     public enum RateLimitScope
     {
-        /// <summary>
-        /// Rate limiting applies to the entire workload group
-        /// </summary>
         WorkloadGroup,
-        
-        /// <summary>
-        /// Rate limiting applies per principal (user/application)
-        /// </summary>
         Principal
     }
 
-    /// <summary>
-    /// Enforcement level for queries rate limits
-    /// </summary>
     public enum QueriesEnforcementLevel
     {
-        /// <summary>
-        /// Enforcement at query head level
-        /// </summary>
         QueryHead,
-        
-        /// <summary>
-        /// Enforcement at cluster level
-        /// </summary>
         Cluster
     }
 
-    /// <summary>
-    /// Enforcement level for commands rate limits
-    /// </summary>
     public enum CommandsEnforcementLevel
     {
-        /// <summary>
-        /// Enforcement at cluster level
-        /// </summary>
         Cluster,
-        
-        /// <summary>
-        /// Enforcement at database level
-        /// </summary>
         Database
+    }
+
+    public enum QueryConsistency
+    {
+        Strong,
+        Weak,
+        WeakAffinitizedByQuery,
+        WeakAffinitizedByDatabase
     }
 
     public class WorkloadGroup : IEquatable<WorkloadGroup>
@@ -115,6 +83,9 @@ namespace KustoSchemaTools.Model
         [JsonProperty("RequestRateLimitsEnforcementPolicy")]
         public RequestRateLimitsEnforcementPolicy? RequestRateLimitsEnforcementPolicy { get; set; }
 
+        [JsonProperty("QueryConsistencyPolicy")]
+        public QueryConsistencyPolicy? QueryConsistencyPolicy { get; set; }
+
         public bool Equals(WorkloadGroupPolicy? other)
         {
             if (other is null) return false;
@@ -123,7 +94,8 @@ namespace KustoSchemaTools.Model
                    (RequestRateLimitPolicies == null && other.RequestRateLimitPolicies == null ||
                     RequestRateLimitPolicies != null && other.RequestRateLimitPolicies != null &&
                     RequestRateLimitPolicies.SequenceEqual(other.RequestRateLimitPolicies)) &&
-                   EqualityComparer<RequestRateLimitsEnforcementPolicy?>.Default.Equals(RequestRateLimitsEnforcementPolicy, other.RequestRateLimitsEnforcementPolicy);
+                   EqualityComparer<RequestRateLimitsEnforcementPolicy?>.Default.Equals(RequestRateLimitsEnforcementPolicy, other.RequestRateLimitsEnforcementPolicy) &&
+                   EqualityComparer<QueryConsistencyPolicy?>.Default.Equals(QueryConsistencyPolicy, other.QueryConsistencyPolicy);
         }
 
         public override bool Equals(object? obj) => Equals(obj as WorkloadGroupPolicy);
@@ -133,6 +105,7 @@ namespace KustoSchemaTools.Model
             var hc = new HashCode();
             hc.Add(RequestLimitsPolicy);
             hc.Add(RequestRateLimitsEnforcementPolicy);
+            hc.Add(QueryConsistencyPolicy);
             if (RequestRateLimitPolicies != null)
             {
                 foreach (var policy in RequestRateLimitPolicies)
@@ -179,57 +152,30 @@ namespace KustoSchemaTools.Model
 
     public class RequestLimitsPolicy : IEquatable<RequestLimitsPolicy>
     {
-        /// <summary>
-        /// Limits the data scope that the query is allowed to reference
-        /// </summary>
         [JsonProperty("DataScope")]
         public PolicyValue<string>? DataScope { get; set; }
 
-        /// <summary>
-        /// Maximum amount of memory a single query operator may allocate per node (in bytes)
-        /// </summary>
         [JsonProperty("MaxMemoryPerQueryPerNode")]
         public PolicyValue<long>? MaxMemoryPerQueryPerNode { get; set; }
 
-        /// <summary>
-        /// Maximum amount of memory a single query operator iterator can allocate (in bytes)
-        /// </summary>
         [JsonProperty("MaxMemoryPerIterator")]
         public PolicyValue<long>? MaxMemoryPerIterator { get; set; }
 
-        /// <summary>
-        /// Maximum percentage of total fanout threads in the cluster that a query can utilize
-        /// </summary>
         [JsonProperty("MaxFanoutThreadsPercentage")]
         public PolicyValue<int>? MaxFanoutThreadsPercentage { get; set; }
 
-        /// <summary>
-        /// Maximum percentage of nodes in the cluster that a query can fanout to
-        /// </summary>
         [JsonProperty("MaxFanoutNodesPercentage")]
         public PolicyValue<int>? MaxFanoutNodesPercentage { get; set; }
 
-        /// <summary>
-        /// Maximum number of records a query is allowed to return to the caller
-        /// </summary>
         [JsonProperty("MaxResultRecords")]
         public PolicyValue<long>? MaxResultRecords { get; set; }
 
-        /// <summary>
-        /// Maximum amount of data a query is allowed to return to the caller (in bytes)
-        /// </summary>
         [JsonProperty("MaxResultBytes")]
         public PolicyValue<long>? MaxResultBytes { get; set; }
 
-        /// <summary>
-        /// Maximum amount of time a request may execute
-        /// </summary>
         [JsonProperty("MaxExecutionTime")]
         public PolicyValue<TimeSpan>? MaxExecutionTime { get; set; }
 
-        /// <summary>
-        /// How frequently progress of query results is reported (only takes effect if query results are progressive)
-        /// </summary>
         [JsonProperty("QueryResultsProgressiveUpdatePeriod")]
         public PolicyValue<TimeSpan>? QueryResultsProgressiveUpdatePeriod { get; set; }
 
@@ -268,29 +214,17 @@ namespace KustoSchemaTools.Model
 
     public class RequestRateLimitPolicy : IEquatable<RequestRateLimitPolicy>
     {
-        /// <summary>
-        /// Whether rate limiting is enabled for the workload group
-        /// </summary>
         [JsonProperty("IsEnabled")]
         public bool IsEnabled { get; set; }
 
-        /// <summary>
-        /// The scope of rate limiting - can be "WorkloadGroup" or "Principal"
-        /// </summary>
         [JsonProperty("Scope")]
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public RateLimitScope Scope { get; set; }
 
-        /// <summary>
-        /// Type of rate limiting - "ConcurrentRequests" or "ResourceUtilization"
-        /// </summary>
         [JsonProperty("LimitKind")]
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public RateLimitKind LimitKind { get; set; }
 
-        /// <summary>
-        /// Rate limit properties containing specific limits
-        /// </summary>
         [JsonProperty("Properties")]
         public object Properties { get; set; } = new();
 
@@ -314,16 +248,10 @@ namespace KustoSchemaTools.Model
 
     public class RequestRateLimitsEnforcementPolicy : IEquatable<RequestRateLimitsEnforcementPolicy>
     {
-        /// <summary>
-        /// Enforcement level for queries
-        /// </summary>
         [JsonProperty("QueriesEnforcementLevel")]
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public QueriesEnforcementLevel QueriesEnforcementLevel { get; set; }
 
-        /// <summary>
-        /// Enforcement level for commands
-        /// </summary>
         [JsonProperty("CommandsEnforcementLevel")]
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public CommandsEnforcementLevel CommandsEnforcementLevel { get; set; }
@@ -341,6 +269,30 @@ namespace KustoSchemaTools.Model
         public override int GetHashCode()
         {
             return HashCode.Combine(QueriesEnforcementLevel, CommandsEnforcementLevel);
+        }
+    }
+
+    public class QueryConsistencyPolicy : IEquatable<QueryConsistencyPolicy>
+    {
+        [JsonProperty("QueryConsistency")]
+        public PolicyValue<QueryConsistency>? QueryConsistency { get; set; }
+
+        [JsonProperty("CachedResultsMaxAge")]
+        public PolicyValue<TimeSpan>? CachedResultsMaxAge { get; set; }
+
+        public bool Equals(QueryConsistencyPolicy? other)
+        {
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return EqualityComparer<PolicyValue<QueryConsistency>?>.Default.Equals(QueryConsistency, other.QueryConsistency) &&
+                   EqualityComparer<PolicyValue<TimeSpan>?>.Default.Equals(CachedResultsMaxAge, other.CachedResultsMaxAge);
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as QueryConsistencyPolicy);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(QueryConsistency, CachedResultsMaxAge);
         }
     }
 }
