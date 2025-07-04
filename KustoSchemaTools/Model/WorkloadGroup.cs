@@ -1,12 +1,26 @@
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace KustoSchemaTools.Model
 {
+    public enum RateLimitKind
+    {
+        ConcurrentRequests,
+        ResourceUtilization
+    }
+
+    public enum RateLimitScope
+    {
+        WorkloadGroup,
+        Principal
+    }
+
     public class WorkloadGroup : IEquatable<WorkloadGroup>
     {
         public required string WorkloadGroupName { get; set; }
 
-        public WorkloadGroupPolicy WorkloadGroupPolicy { get; set; }
+        public WorkloadGroupPolicy? WorkloadGroupPolicy { get; set; }
         public bool Equals(WorkloadGroup? other)
         {
             if (other is null) return false;
@@ -27,6 +41,11 @@ namespace KustoSchemaTools.Model
 
         public string ToUpdateScript()
         {
+            if (WorkloadGroupPolicy == null)
+            {
+                throw new InvalidOperationException("WorkloadGroupPolicy cannot be null when generating update script");
+            }
+            
             var workloadGroupPolicyJson = WorkloadGroupPolicy.ToJson();
             var script = $".alter-merge workload_group {WorkloadGroupName} ```{workloadGroupPolicyJson}```";
             return script;
@@ -38,18 +57,33 @@ namespace KustoSchemaTools.Model
         [JsonProperty("RequestLimitsPolicy")]
         public RequestLimitsPolicy? RequestLimitsPolicy { get; set; }
 
+        [JsonProperty("RequestRateLimitPolicies")]
+        public List<RequestRateLimitPolicy>? RequestRateLimitPolicies { get; set; }
+
         public bool Equals(WorkloadGroupPolicy? other)
         {
             if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
-            return EqualityComparer<RequestLimitsPolicy?>.Default.Equals(RequestLimitsPolicy, other.RequestLimitsPolicy);
+            return EqualityComparer<RequestLimitsPolicy?>.Default.Equals(RequestLimitsPolicy, other.RequestLimitsPolicy) &&
+                   (RequestRateLimitPolicies == null && other.RequestRateLimitPolicies == null ||
+                    RequestRateLimitPolicies != null && other.RequestRateLimitPolicies != null &&
+                    RequestRateLimitPolicies.SequenceEqual(other.RequestRateLimitPolicies));
         }
 
         public override bool Equals(object? obj) => Equals(obj as WorkloadGroupPolicy);
 
         public override int GetHashCode()
         {
-            return RequestLimitsPolicy?.GetHashCode() ?? 0;
+            var hc = new HashCode();
+            hc.Add(RequestLimitsPolicy);
+            if (RequestRateLimitPolicies != null)
+            {
+                foreach (var policy in RequestRateLimitPolicies)
+                {
+                    hc.Add(policy);
+                }
+            }
+            return hc.ToHashCode();
         }
 
         public string ToJson()
@@ -172,6 +206,52 @@ namespace KustoSchemaTools.Model
             hc.Add(MaxExecutionTime);
             hc.Add(QueryResultsProgressiveUpdatePeriod);
             return hc.ToHashCode();
+        }
+    }
+
+    public class RequestRateLimitPolicy : IEquatable<RequestRateLimitPolicy>
+    {
+        /// <summary>
+        /// Whether rate limiting is enabled for the workload group
+        /// </summary>
+        [JsonProperty("IsEnabled")]
+        public bool IsEnabled { get; set; }
+
+        /// <summary>
+        /// The scope of rate limiting - can be "WorkloadGroup" or "Principal"
+        /// </summary>
+        [JsonProperty("Scope")]
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public RateLimitScope Scope { get; set; }
+
+        /// <summary>
+        /// Type of rate limiting - "ConcurrentRequests" or "ResourceUtilization"
+        /// </summary>
+        [JsonProperty("LimitKind")]
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public RateLimitKind LimitKind { get; set; }
+
+        /// <summary>
+        /// Rate limit properties containing specific limits
+        /// </summary>
+        [JsonProperty("Properties")]
+        public object Properties { get; set; } = new();
+
+        public bool Equals(RequestRateLimitPolicy? other)
+        {
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return IsEnabled == other.IsEnabled &&
+                   Scope == other.Scope &&
+                   LimitKind == other.LimitKind &&
+                   EqualityComparer<object>.Default.Equals(Properties, other.Properties);
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as RequestRateLimitPolicy);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(IsEnabled, Scope, LimitKind, Properties);
         }
     }
 }
