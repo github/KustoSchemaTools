@@ -63,7 +63,7 @@ namespace KustoSchemaTools.Model
             {
                 throw new InvalidOperationException("WorkloadGroupPolicy cannot be null when generating create script");
             }
-            
+
             var workloadGroupPolicyJson = WorkloadGroupPolicy.ToJson();
             var script = $".create-or-alter workload_group {WorkloadGroupName} ```{workloadGroupPolicyJson}```";
             return script;
@@ -78,6 +78,12 @@ namespace KustoSchemaTools.Model
 
             var workloadGroupPolicyJson = WorkloadGroupPolicy.ToJson();
             var script = $".alter-merge workload_group {WorkloadGroupName} ```{workloadGroupPolicyJson}```";
+            return script;
+        }
+        
+        public string ToDeleteScript()
+        {
+            var script = $".drop workload_group {WorkloadGroupName}";
             return script;
         }
     }
