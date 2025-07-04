@@ -42,6 +42,28 @@ namespace KustoSchemaTools
                 }
             }
 
+            _logger.LogInformation("Loading workload groups...");
+            using (var reader = await _adminClient.ExecuteControlCommandAsync("", ".show workload_groups", new ClientRequestProperties()))
+            {
+                while (reader.Read())
+                {
+                    var workloadGroupName = reader["WorkloadGroupName"]?.ToString();
+                    var workloadGroupJson = reader["WorkloadGroup"]?.ToString();
+                    
+                    if (!string.IsNullOrEmpty(workloadGroupName) && !string.IsNullOrEmpty(workloadGroupJson))
+                    {
+                        var workloadGroupPolicy = JsonConvert.DeserializeObject<WorkloadGroupPolicy>(workloadGroupJson);
+                        var workloadGroup = new WorkloadGroup 
+                        { 
+                            WorkloadGroupName = workloadGroupName,
+                            WorkloadGroupPolicy = workloadGroupPolicy
+                        };
+                        cluster.WorkloadGroups.Add(workloadGroup);
+                    }
+                }
+            }
+        
+
             return cluster;
         }
 

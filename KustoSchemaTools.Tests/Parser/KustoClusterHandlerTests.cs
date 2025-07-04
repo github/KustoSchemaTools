@@ -248,15 +248,22 @@ namespace KustoSchemaTools.Tests.Parser
             }
             """;
 
-            var mockReader = new Mock<IDataReader>();
-            mockReader.SetupSequence(x => x.Read())
+            var mockCapacityReader = new Mock<IDataReader>();
+            mockCapacityReader.SetupSequence(x => x.Read())
                 .Returns(true)   // First call returns true (data available)
                 .Returns(false); // Second call returns false (no more data)
-            mockReader.Setup(x => x["Policy"]).Returns(policyJson);
+            mockCapacityReader.Setup(x => x["Policy"]).Returns(policyJson);
+
+            var mockWorkloadGroupsReader = new Mock<IDataReader>();
+            mockWorkloadGroupsReader.Setup(x => x.Read()).Returns(false); // No workload groups
 
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
-                .ReturnsAsync(mockReader.Object);
+                .ReturnsAsync(mockCapacityReader.Object);
+            
+            _adminClientMock
+                .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
+                .ReturnsAsync(mockWorkloadGroupsReader.Object);
 
             // Act
             var result = await _handler.LoadAsync();
@@ -278,10 +285,14 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.NotNull(result.CapacityPolicy.MirroringCapacity);
             Assert.Equal(50, result.CapacityPolicy.MirroringCapacity.ClusterMaximumConcurrentOperations);
 
-            // Verify the correct command was executed
+            // Verify the correct commands were executed
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
                 ".show cluster policy capacity",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show workload_groups",
                 It.IsAny<ClientRequestProperties>()), Times.Once);
         }
 
@@ -289,12 +300,19 @@ namespace KustoSchemaTools.Tests.Parser
         public async Task LoadAsync_WithNoPolicyData_ReturnsClusterWithoutPolicy()
         {
             // Arrange
-            var mockReader = new Mock<IDataReader>();
-            mockReader.Setup(x => x.Read()).Returns(false); // No data
+            var mockCapacityReader = new Mock<IDataReader>();
+            mockCapacityReader.Setup(x => x.Read()).Returns(false); // No data
+
+            var mockWorkloadGroupsReader = new Mock<IDataReader>();
+            mockWorkloadGroupsReader.Setup(x => x.Read()).Returns(false); // No workload groups
 
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
-                .ReturnsAsync(mockReader.Object);
+                .ReturnsAsync(mockCapacityReader.Object);
+            
+            _adminClientMock
+                .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
+                .ReturnsAsync(mockWorkloadGroupsReader.Object);
 
             // Act
             var result = await _handler.LoadAsync();
@@ -305,10 +323,14 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.Equal("test.eastus", result.Url);
             Assert.Null(result.CapacityPolicy);
 
-            // Verify the correct command was executed
+            // Verify the correct commands were executed
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
                 ".show cluster policy capacity",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show workload_groups",
                 It.IsAny<ClientRequestProperties>()), Times.Once);
         }
 
@@ -316,15 +338,22 @@ namespace KustoSchemaTools.Tests.Parser
         public async Task LoadAsync_WithEmptyPolicyJson_ReturnsClusterWithoutPolicy()
         {
             // Arrange
-            var mockReader = new Mock<IDataReader>();
-            mockReader.SetupSequence(x => x.Read())
+            var mockCapacityReader = new Mock<IDataReader>();
+            mockCapacityReader.SetupSequence(x => x.Read())
                 .Returns(true)   // First call returns true (data available)
                 .Returns(false); // Second call returns false (no more data)
-            mockReader.Setup(x => x["Policy"]).Returns(""); // Empty policy
+            mockCapacityReader.Setup(x => x["Policy"]).Returns(""); // Empty policy
+
+            var mockWorkloadGroupsReader = new Mock<IDataReader>();
+            mockWorkloadGroupsReader.Setup(x => x.Read()).Returns(false); // No workload groups
 
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
-                .ReturnsAsync(mockReader.Object);
+                .ReturnsAsync(mockCapacityReader.Object);
+            
+            _adminClientMock
+                .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
+                .ReturnsAsync(mockWorkloadGroupsReader.Object);
 
             // Act
             var result = await _handler.LoadAsync();
@@ -334,21 +363,38 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.Equal("test-cluster", result.Name);
             Assert.Equal("test.eastus", result.Url);
             Assert.Null(result.CapacityPolicy);
+
+            // Verify the correct commands were executed
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show cluster policy capacity",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show workload_groups",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
         }
 
         [Fact]
         public async Task LoadAsync_WithNullPolicyJson_ReturnsClusterWithoutPolicy()
         {
             // Arrange
-            var mockReader = new Mock<IDataReader>();
-            mockReader.SetupSequence(x => x.Read())
+            var mockCapacityReader = new Mock<IDataReader>();
+            mockCapacityReader.SetupSequence(x => x.Read())
                 .Returns(true)   // First call returns true (data available)
                 .Returns(false); // Second call returns false (no more data)
-            mockReader.Setup(x => x["Policy"]).Returns((object?)null); // Null policy
+            mockCapacityReader.Setup(x => x["Policy"]).Returns(null as object); // Null policy
+
+            var mockWorkloadGroupsReader = new Mock<IDataReader>();
+            mockWorkloadGroupsReader.Setup(x => x.Read()).Returns(false); // No workload groups
 
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
-                .ReturnsAsync(mockReader.Object);
+                .ReturnsAsync(mockCapacityReader.Object);
+            
+            _adminClientMock
+                .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
+                .ReturnsAsync(mockWorkloadGroupsReader.Object);
 
             // Act
             var result = await _handler.LoadAsync();
@@ -358,6 +404,117 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.Equal("test-cluster", result.Name);
             Assert.Equal("test.eastus", result.Url);
             Assert.Null(result.CapacityPolicy);
+
+            // Verify the correct commands were executed
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show cluster policy capacity",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show workload_groups",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task LoadAsync_WithWorkloadGroups_ReturnsClusterWithWorkloadGroups()
+        {
+            // Arrange
+            var workloadGroupJson1 = """
+            {
+                "RequestLimitsPolicy": {
+                    "DataScope": {
+                        "IsRelaxable": true,
+                        "Value": "All"
+                    },
+                    "MaxMemoryPerQueryPerNode": {
+                        "IsRelaxable": true,
+                        "Value": 8589346816
+                    },
+                    "MaxExecutionTime": {
+                        "IsRelaxable": true,
+                        "Value": "00:04:00"
+                    }
+                },
+                "RequestRateLimitPolicies": [
+                    {
+                        "IsEnabled": true,
+                        "Scope": "WorkloadGroup",
+                        "LimitKind": "ConcurrentRequests",
+                        "Properties": {
+                            "MaxConcurrentRequests": 20
+                        }
+                    }
+                ]
+            }
+            """;
+
+            var workloadGroupJson2 = """
+            {
+                "RequestRateLimitPolicies": []
+            }
+            """;
+
+            var mockCapacityReader = new Mock<IDataReader>();
+            mockCapacityReader.Setup(x => x.Read()).Returns(false); // No capacity policy
+
+            var mockWorkloadGroupsReader = new Mock<IDataReader>();
+            mockWorkloadGroupsReader.SetupSequence(x => x.Read())
+                .Returns(true)   // First workload group
+                .Returns(true)   // Second workload group
+                .Returns(false); // No more data
+            mockWorkloadGroupsReader.SetupSequence(x => x["WorkloadGroupName"])
+                .Returns("default")
+                .Returns("custom");
+            mockWorkloadGroupsReader.SetupSequence(x => x["WorkloadGroup"])
+                .Returns(workloadGroupJson1)
+                .Returns(workloadGroupJson2);
+
+            _adminClientMock
+                .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
+                .ReturnsAsync(mockCapacityReader.Object);
+            
+            _adminClientMock
+                .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
+                .ReturnsAsync(mockWorkloadGroupsReader.Object);
+
+            // Act
+            var result = await _handler.LoadAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("test-cluster", result.Name);
+            Assert.Equal("test.eastus", result.Url);
+            Assert.Null(result.CapacityPolicy);
+            
+            // Verify workload groups were loaded
+            Assert.NotNull(result.WorkloadGroups);
+            Assert.Equal(2, result.WorkloadGroups.Count);
+            
+            var defaultGroup = result.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == "default");
+            Assert.NotNull(defaultGroup);
+            Assert.NotNull(defaultGroup.WorkloadGroupPolicy);
+            Assert.NotNull(defaultGroup.WorkloadGroupPolicy.RequestLimitsPolicy);
+            Assert.Equal("All", defaultGroup.WorkloadGroupPolicy.RequestLimitsPolicy.DataScope?.Value);
+            Assert.Equal(8589346816, defaultGroup.WorkloadGroupPolicy.RequestLimitsPolicy.MaxMemoryPerQueryPerNode?.Value);
+            Assert.NotNull(defaultGroup.WorkloadGroupPolicy.RequestRateLimitPolicies);
+            Assert.Single(defaultGroup.WorkloadGroupPolicy.RequestRateLimitPolicies);
+
+            var customGroup = result.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == "custom");
+            Assert.NotNull(customGroup);
+            Assert.NotNull(customGroup.WorkloadGroupPolicy);
+            Assert.NotNull(customGroup.WorkloadGroupPolicy.RequestRateLimitPolicies);
+            Assert.Empty(customGroup.WorkloadGroupPolicy.RequestRateLimitPolicies);
+
+            // Verify the correct commands were executed
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show cluster policy capacity",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
+            _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
+                "",
+                ".show workload_groups",
+                It.IsAny<ClientRequestProperties>()), Times.Once);
         }
 
         #region Helper Methods
