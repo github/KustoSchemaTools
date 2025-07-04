@@ -57,13 +57,25 @@ namespace KustoSchemaTools.Model
             return hc.ToHashCode();
         }
 
+        public string ToCreateScript()
+        {
+            if (WorkloadGroupPolicy == null)
+            {
+                throw new InvalidOperationException("WorkloadGroupPolicy cannot be null when generating create script");
+            }
+            
+            var workloadGroupPolicyJson = WorkloadGroupPolicy.ToJson();
+            var script = $".create-or-alter workload_group {WorkloadGroupName} ```{workloadGroupPolicyJson}```";
+            return script;
+        }
+
         public string ToUpdateScript()
         {
             if (WorkloadGroupPolicy == null)
             {
                 throw new InvalidOperationException("WorkloadGroupPolicy cannot be null when generating update script");
             }
-            
+
             var workloadGroupPolicyJson = WorkloadGroupPolicy.ToJson();
             var script = $".alter-merge workload_group {WorkloadGroupName} ```{workloadGroupPolicyJson}```";
             return script;
