@@ -2,6 +2,7 @@ using KustoSchemaTools.Changes;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using Microsoft.Extensions.Logging;
+using Kusto.Data;
 
 namespace KustoSchemaTools
 {
@@ -64,6 +65,45 @@ namespace KustoSchemaTools
             Log.LogInformation($"Loaded {clusterList.Count} cluster configuration(s) from YAML file");
 
             return await GenerateChangesAsync(clusters);
+        }
+
+        /// <summary>
+        /// Loads cluster configurations from a YAML file, generates changes by comparing 
+        /// them with the live Kusto clusters, and then applies those changes.
+        /// </summary>
+        /// <param name="clusterConfigFilePath">The path to the YAML file containing cluster configurations.</param>
+        /// <returns>A task representing the asynchronous apply operation.</returns>
+        public async Task<List<ScriptExecuteCommandResult>> ApplyAsync(string clusterConfigFilePath)
+        {
+            Log.LogInformation($"Starting apply operation for cluster config file: {clusterConfigFilePath}");
+
+            // Generate the changes first
+            var changeSets = await GenerateChangesFromFileAsync(clusterConfigFilePath);
+            var allResults = new List<ScriptExecuteCommandResult>();
+
+            // Apply changes for each cluster
+            foreach (var changeSet in changeSets)
+            {
+                Log.LogInformation($"Applying changes to cluster: {changeSet.Entity}");
+
+                if (changeSet.Changes.Count == 0)
+                {
+                    Log.LogInformation($"No changes to apply for cluster: {changeSet.Entity}");
+                    continue;
+                }
+
+                var clusterName = changeSet.To.Name;
+                var clusterUrl = changeSet.To.Url;
+
+                var kustoHandler = KustoClusterHandlerFactory.Create(clusterName, clusterUrl);
+                var result = await kustoHandler.WriteAsync(changeSet);
+                
+                // Add the results from this cluster to the overall results list
+                allResults.AddRange(result);
+            }
+
+            Log.LogInformation($"Finished applying. Total scripts executed: {allResults.Count}");
+            return allResults;
         }
     }
 }

@@ -18,8 +18,8 @@ namespace KustoSchemaTools.Tests.Changes
         public void GenerateChanges_WithIdenticalPolicies_ShouldDetectNoChanges()
         {
             // Arrange
-            var oldCluster = CreateClusterWithPolicy(0.2, 1, 2, 3);
-            var newCluster = CreateClusterWithPolicy(0.2, 1, 2, 3);
+            var oldCluster = CreateClusterWithPolicy(0.2, 1, 2);
+            var newCluster = CreateClusterWithPolicy(0.2, 1, 2);
 
             // Act
             var changeSet = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
@@ -32,8 +32,8 @@ namespace KustoSchemaTools.Tests.Changes
         public void GenerateChanges_WithSingleChange_ShouldDetectChangeAndCreateScript()
         {
             // Arrange
-            var oldCluster = CreateClusterWithPolicy(0.2, 1, 2, 3);
-            var newCluster = CreateClusterWithPolicy(0.2, 1, 2, 5);
+            var oldCluster = CreateClusterWithPolicy(0.2, 1, 2);
+            var newCluster = CreateClusterWithPolicy(0.2, 1, 5);
 
             // Act
             var changeSet = ClusterChanges.GenerateChanges(oldCluster, newCluster, _loggerMock.Object);
@@ -93,8 +93,7 @@ namespace KustoSchemaTools.Tests.Changes
         private Cluster CreateClusterWithPolicy(
             double? ingestionCapacityCoreUtilizationCoefficient = null,
             int? materializedViewsCapacityClusterMaximumConcurrentOperations = null,
-            int? extentsRebuildClusterMaximumConcurrentOperations = null,
-            int? extentsRebuildMaximumConcurrentOperationsPerNode = null
+            int? materializedViewsCapacityClusterMinimumConcurrentOperations = null
         )
         {
             return new Cluster
@@ -104,11 +103,7 @@ namespace KustoSchemaTools.Tests.Changes
                     MaterializedViewsCapacity = new MaterializedViewsCapacity
                     {
                         ClusterMaximumConcurrentOperations = materializedViewsCapacityClusterMaximumConcurrentOperations,
-                        ExtentsRebuildCapacity = (extentsRebuildClusterMaximumConcurrentOperations != null || extentsRebuildMaximumConcurrentOperationsPerNode != null) ? new ExtentsRebuildCapacity
-                        {
-                            ClusterMaximumConcurrentOperations = extentsRebuildClusterMaximumConcurrentOperations,
-                            MaximumConcurrentOperationsPerNode = extentsRebuildMaximumConcurrentOperationsPerNode
-                        } : null
+                        ClusterMinimumConcurrentOperations = materializedViewsCapacityClusterMinimumConcurrentOperations
                     },
                     IngestionCapacity = new IngestionCapacity
                     {

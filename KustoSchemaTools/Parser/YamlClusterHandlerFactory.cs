@@ -1,6 +1,8 @@
+using KustoSchemaTools.Parser;
+
 namespace KustoSchemaTools
 {
-    public class YamlClusterHandlerFactory
+    public class YamlClusterHandlerFactory : IYamlClusterHandlerFactory
     {
         public virtual YamlClusterHandler Create(string path)
         {

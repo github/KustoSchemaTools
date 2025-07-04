@@ -3,13 +3,6 @@ using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using Xunit;
-using System.Data;
-using System;
-using System.Linq;
 using Kusto.Data.Common;
 
 namespace KustoSchemaTools.Tests
@@ -28,10 +21,9 @@ namespace KustoSchemaTools.Tests
             kustoClusterHandlerFactoryMock = new Mock<IKustoClusterHandlerFactory>();
             yamlClusterHandlerFactoryMock = new Mock<IYamlClusterHandlerFactory>();
             
-            // Create mock for KustoClusterHandler
-            var kustoClientMock = new Mock<KustoClient>("test.eastus");
+            var adminClientMock = new Mock<ICslAdminProvider>();
             var kustoLoggerMock = new Mock<ILogger<KustoClusterHandler>>();
-            kustoHandlerMock = new Mock<KustoClusterHandler>(kustoClientMock.Object, kustoLoggerMock.Object, "test", "test.eastus");
+            kustoHandlerMock = new Mock<KustoClusterHandler>(adminClientMock.Object, kustoLoggerMock.Object, "test", "test.eastus");
             
             orchestrator = new KustoClusterOrchestrator(
                 loggerMock.Object,
@@ -57,12 +49,10 @@ namespace KustoSchemaTools.Tests
 
         private void SetupMockHandler(Cluster kustoCluster)
         {
-            // Configure the handler factory to return our mock handler
             kustoClusterHandlerFactoryMock
                 .Setup(f => f.Create("test", "test.eastus"))
                 .Returns(kustoHandlerMock.Object);
                 
-            // Set up the mock handler to return our test cluster
             kustoHandlerMock
                 .Setup(h => h.LoadAsync())
                 .ReturnsAsync(kustoCluster);
@@ -106,8 +96,7 @@ namespace KustoSchemaTools.Tests
 
         private void SetupMultipleClusterMocks()
         {
-            // Mock for cluster1
-            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("cluster1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "cluster1", "cluster1.eastus");
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "cluster1", "cluster1.eastus");
             var kustoCluster1 = new Cluster
             {
                 Name = "cluster1",
@@ -128,8 +117,7 @@ namespace KustoSchemaTools.Tests
                 .Setup(h => h.LoadAsync())
                 .ReturnsAsync(kustoCluster1);
 
-            // Mock for cluster2 - same as config, no changes
-            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("cluster2.westus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "cluster2", "cluster2.westus");
+            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "cluster2", "cluster2.westus");
             var kustoCluster2 = new Cluster
             {
                 Name = "cluster2",
@@ -404,7 +392,7 @@ namespace KustoSchemaTools.Tests
                 .Returns(new YamlClusterHandler(yamlFilePath));
             
             // Set up mocks for the clusters defined in the YAML file
-            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
             var kustoCluster1 = new Cluster
             {
                 Name = "test1",
@@ -425,7 +413,7 @@ namespace KustoSchemaTools.Tests
                 .Setup(h => h.LoadAsync())
                 .ReturnsAsync(kustoCluster1);
 
-            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test2.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test2", "test2.eastus");
+            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test2", "test2.eastus");
             var kustoCluster2 = new Cluster
             {
                 Name = "test2",
@@ -568,8 +556,8 @@ namespace KustoSchemaTools.Tests
                 .Returns(new YamlClusterHandler(yamlFilePath));
             
             // Set up a simple mock for the clusters
-            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
-            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test2.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test2", "test2.eastus");
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
+            var kustoHandler2Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test2", "test2.eastus");
             
             kustoClusterHandlerFactoryMock
                 .Setup(f => f.Create("test1", "test1.eastus"))
@@ -639,7 +627,7 @@ namespace KustoSchemaTools.Tests
                 .Setup(f => f.Create(yamlFilePath))
                 .Returns(new YamlClusterHandler(yamlFilePath));
             
-            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<KustoClient>("test1.eastus").Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
+            var kustoHandler1Mock = new Mock<KustoClusterHandler>(new Mock<ICslAdminProvider>().Object, new Mock<ILogger<KustoClusterHandler>>().Object, "test1", "test1.eastus");
             
             kustoClusterHandlerFactoryMock
                 .Setup(f => f.Create("test1", "test1.eastus"))
