@@ -4,16 +4,68 @@ using System.Linq;
 
 namespace KustoSchemaTools.Model
 {
+    /// <summary>
+    /// Types of rate limiting available for workload groups
+    /// </summary>
     public enum RateLimitKind
     {
+        /// <summary>
+        /// Limits the number of concurrent requests
+        /// </summary>
         ConcurrentRequests,
+        
+        /// <summary>
+        /// Limits resource utilization (CPU, memory, etc.)
+        /// </summary>
         ResourceUtilization
     }
 
+    /// <summary>
+    /// Scope of rate limiting
+    /// </summary>
     public enum RateLimitScope
     {
+        /// <summary>
+        /// Rate limiting applies to the entire workload group
+        /// </summary>
         WorkloadGroup,
+        
+        /// <summary>
+        /// Rate limiting applies per principal (user/application)
+        /// </summary>
         Principal
+    }
+
+    /// <summary>
+    /// Enforcement level for queries rate limits
+    /// </summary>
+    public enum QueriesEnforcementLevel
+    {
+        /// <summary>
+        /// Enforcement at query head level
+        /// </summary>
+        QueryHead,
+        
+        /// <summary>
+        /// Enforcement at cluster level
+        /// </summary>
+        Cluster
+    }
+
+    /// <summary>
+    /// Enforcement level for commands rate limits
+    /// </summary>
+    public enum CommandsEnforcementLevel
+    {
+        /// <summary>
+        /// Enforcement at cluster level
+        /// </summary>
+        Cluster,
+        
+        /// <summary>
+        /// Enforcement at database level
+        /// </summary>
+        Database
     }
 
     public class WorkloadGroup : IEquatable<WorkloadGroup>
@@ -60,6 +112,9 @@ namespace KustoSchemaTools.Model
         [JsonProperty("RequestRateLimitPolicies")]
         public List<RequestRateLimitPolicy>? RequestRateLimitPolicies { get; set; }
 
+        [JsonProperty("RequestRateLimitsEnforcementPolicy")]
+        public RequestRateLimitsEnforcementPolicy? RequestRateLimitsEnforcementPolicy { get; set; }
+
         public bool Equals(WorkloadGroupPolicy? other)
         {
             if (other is null) return false;
@@ -67,7 +122,8 @@ namespace KustoSchemaTools.Model
             return EqualityComparer<RequestLimitsPolicy?>.Default.Equals(RequestLimitsPolicy, other.RequestLimitsPolicy) &&
                    (RequestRateLimitPolicies == null && other.RequestRateLimitPolicies == null ||
                     RequestRateLimitPolicies != null && other.RequestRateLimitPolicies != null &&
-                    RequestRateLimitPolicies.SequenceEqual(other.RequestRateLimitPolicies));
+                    RequestRateLimitPolicies.SequenceEqual(other.RequestRateLimitPolicies)) &&
+                   EqualityComparer<RequestRateLimitsEnforcementPolicy?>.Default.Equals(RequestRateLimitsEnforcementPolicy, other.RequestRateLimitsEnforcementPolicy);
         }
 
         public override bool Equals(object? obj) => Equals(obj as WorkloadGroupPolicy);
@@ -76,6 +132,7 @@ namespace KustoSchemaTools.Model
         {
             var hc = new HashCode();
             hc.Add(RequestLimitsPolicy);
+            hc.Add(RequestRateLimitsEnforcementPolicy);
             if (RequestRateLimitPolicies != null)
             {
                 foreach (var policy in RequestRateLimitPolicies)
@@ -252,6 +309,38 @@ namespace KustoSchemaTools.Model
         public override int GetHashCode()
         {
             return HashCode.Combine(IsEnabled, Scope, LimitKind, Properties);
+        }
+    }
+
+    public class RequestRateLimitsEnforcementPolicy : IEquatable<RequestRateLimitsEnforcementPolicy>
+    {
+        /// <summary>
+        /// Enforcement level for queries
+        /// </summary>
+        [JsonProperty("QueriesEnforcementLevel")]
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public QueriesEnforcementLevel QueriesEnforcementLevel { get; set; }
+
+        /// <summary>
+        /// Enforcement level for commands
+        /// </summary>
+        [JsonProperty("CommandsEnforcementLevel")]
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public CommandsEnforcementLevel CommandsEnforcementLevel { get; set; }
+
+        public bool Equals(RequestRateLimitsEnforcementPolicy? other)
+        {
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return QueriesEnforcementLevel == other.QueriesEnforcementLevel &&
+                   CommandsEnforcementLevel == other.CommandsEnforcementLevel;
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as RequestRateLimitsEnforcementPolicy);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(QueriesEnforcementLevel, CommandsEnforcementLevel);
         }
     }
 }
