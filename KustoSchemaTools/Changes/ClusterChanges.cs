@@ -1,6 +1,7 @@
 using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using Kusto.Language;
+using System.Text;
 
 namespace KustoSchemaTools.Changes
 {
@@ -44,6 +45,9 @@ namespace KustoSchemaTools.Changes
                 var diagnostics = code.GetDiagnostics();
                 script.IsValid = !diagnostics.Any();
             }
+
+            changeSet.Markdown = GenerateClusterMarkdown(changeSet);
+
             return changeSet;
         }
 
@@ -89,7 +93,8 @@ namespace KustoSchemaTools.Changes
 
             if (changedProperties.Any())
             {
-                policyChange.Markdown = $"## {entityType} Changes\n\n{string.Join("\n", changedProperties)}";
+                var action = oldPolicy == null ? "Create" : "Update";
+                policyChange.Markdown = $"### {action} {entityType} `{entityName}`\n\n{string.Join("\n", changedProperties)}";
                 policyChange.Scripts.AddRange(scriptGenerator(newPolicy));
                 return policyChange;
             }
@@ -114,7 +119,7 @@ namespace KustoSchemaTools.Changes
             else
             {
                 var capacityPolicyChange = ComparePolicy(
-                    "Cluster Capacity Policy",
+                    "Capacity Policy",
                     "default",
                     oldCluster.CapacityPolicy,
                     newCluster.CapacityPolicy,
@@ -148,6 +153,12 @@ namespace KustoSchemaTools.Changes
                 {
                     log.LogInformation($"Marking workload group '{workloadGroupName}' for deletion.");
                     var deletionChange = new DeletionChange(workloadGroupName, "workload_group");
+
+                    // Replace the header in the deletion markdown
+                    var originalMarkdown = deletionChange.Markdown;
+                    var modifiedMarkdown = originalMarkdown.Replace($"## {workloadGroupName}", $"#### :heavy_minus_sign: Drop {workloadGroupName}");
+                    deletionChange.Markdown = modifiedMarkdown;
+
                     changeSet.Changes.Add(deletionChange);
                 }
                 else
@@ -169,24 +180,74 @@ namespace KustoSchemaTools.Changes
                 var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == newWorkloadGroup.WorkloadGroupName);
                 var scriptType = existingWorkloadGroup == null ? "ClusterWorkloadGroupCreateOrAlterCommand" : "ClusterWorkloadGroupAlterMergeCommand";
                 var scriptText = existingWorkloadGroup == null ? newWorkloadGroup.ToCreateScript() : newWorkloadGroup.ToUpdateScript();
-                var workloadGroupChange = ComparePolicy(
-                    "Workload Group",
-                    newWorkloadGroup.WorkloadGroupName,
-                    existingWorkloadGroup?.WorkloadGroupPolicy,
-                    newWorkloadGroup.WorkloadGroupPolicy,
-                    wg => new List<DatabaseScriptContainer> {
-                        new DatabaseScriptContainer(
-                            scriptType,
-                            5,
-                            scriptText
-                            )
-                    });
-
-                if (workloadGroupChange != null)
+                
+                // Only create a change if the workload group policy is not null
+                if (newWorkloadGroup.WorkloadGroupPolicy != null)
                 {
-                    changeSet.Changes.Add(workloadGroupChange);
+                    var workloadGroupChange = ComparePolicy(
+                        "Workload Group",
+                        newWorkloadGroup.WorkloadGroupName,
+                        existingWorkloadGroup?.WorkloadGroupPolicy,
+                        newWorkloadGroup.WorkloadGroupPolicy,
+                        wg => new List<DatabaseScriptContainer> {
+                            new DatabaseScriptContainer(
+                                scriptType,
+                                5,
+                                scriptText
+                                )
+                        });
+
+                    if (workloadGroupChange != null)
+                    {
+                        changeSet.Changes.Add(workloadGroupChange);
+                    }
                 }
             }
+        }
+
+        /// <summary>
+        /// Generates a markdown representation of all cluster changes.
+        /// </summary>
+        /// <param name="changeSet">The cluster change set containing all detected changes.</param>
+        /// <returns>A formatted markdown string documenting all changes and scripts.</returns>
+        private static string GenerateClusterMarkdown(ClusterChangeSet changeSet)
+        {
+            var sb = new StringBuilder();
+            
+            sb.AppendLine($"## Cluster: {changeSet.Entity}");
+            sb.AppendLine();
+
+            if (changeSet.Changes.Count == 0)
+            {
+                sb.AppendLine("No changes detected for this cluster.");
+                return sb.ToString();
+            }
+            else
+            {
+                foreach (var change in changeSet.Changes)
+                {
+                    if (!string.IsNullOrEmpty(change.Markdown))
+                    {
+                        sb.AppendLine(change.Markdown);
+                    }
+                    sb.AppendLine();
+                }
+            }
+
+            // Add scripts section
+            if (changeSet.Scripts.Count != 0)
+            {
+                sb.AppendLine("## Scripts to be executed:");
+                sb.AppendLine("```kql");
+                foreach (var script in changeSet.Scripts)
+                {
+                    sb.AppendLine(script.Text);
+                    sb.AppendLine();
+                }
+                sb.AppendLine("```");
+            }
+
+            return sb.ToString();
         }
     }
 }

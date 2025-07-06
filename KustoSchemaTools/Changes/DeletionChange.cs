@@ -29,10 +29,17 @@ namespace KustoSchemaTools.Changes
             }
         }
 
+        private string? _customMarkdown;
+
         public string Markdown
         {
             get
             {
+                if (!string.IsNullOrEmpty(_customMarkdown))
+                {
+                    return _customMarkdown;
+                }
+
                 var sb = new StringBuilder();
                 sb.AppendLine($"## {Entity}");
                 sb.AppendLine();
@@ -46,7 +53,10 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine("</table>");
 
                 return sb.ToString();
-
+            }
+            set
+            {
+                _customMarkdown = value;
             }
         }
 
