@@ -33,53 +33,7 @@ namespace KustoSchemaTools.Changes
             HandleCapacityPolicyChanges(oldCluster, newCluster, changeSet, log);
 
             log.LogInformation($"Analyzing workload group changes for cluster {clusterName}...");
-
-            // Handle workload group deletions first
-            var workloadGroupsToDelete = newCluster.Deletions?.WorkloadGroups ?? new List<string>();
-            foreach (var workloadGroupName in workloadGroupsToDelete)
-            {
-                var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == workloadGroupName);
-                if (existingWorkloadGroup != null)
-                {
-                    log.LogInformation($"Marking workload group '{workloadGroupName}' for deletion.");
-                    var deletionChange = new DeletionChange(workloadGroupName, "workload_group");
-                    changeSet.Changes.Add(deletionChange);
-                }
-                else
-                {
-                    log.LogWarning($"Workload group '{workloadGroupName}' marked for deletion but does not exist in the live cluster.");
-                }
-            }
-
-            // Handle workload group creations and updates
-            foreach (var newWorkloadGroup in newCluster.WorkloadGroups)
-            {
-                // Skip if this workload group is marked for deletion
-                if (workloadGroupsToDelete.Contains(newWorkloadGroup.WorkloadGroupName))
-                {
-                    log.LogInformation($"Skipping update to workload group {newWorkloadGroup.WorkloadGroupName} as it is marked for deletion.");
-                    continue;
-                }
-
-                var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == newWorkloadGroup.WorkloadGroupName);
-
-                var workloadGroupChange = ComparePolicy(
-                    "Workload Group",
-                    newWorkloadGroup.WorkloadGroupName,
-                    existingWorkloadGroup,
-                    newWorkloadGroup,
-                    wg => new List<DatabaseScriptContainer> {
-                        new DatabaseScriptContainer(
-                            existingWorkloadGroup == null ? "CreateWorkloadGroup" : "UpdateWorkloadGroup",
-                            5,
-                            existingWorkloadGroup == null ? wg.ToCreateScript() : wg.ToUpdateScript())
-                    });
-
-                if (workloadGroupChange != null)
-                {
-                    changeSet.Changes.Add(workloadGroupChange);
-                }
-            }
+            HandleWorkloadGroupChanges(oldCluster, newCluster, changeSet, log);
 
             changeSet.Scripts.AddRange(changeSet.Changes.SelectMany(c => c.Scripts));
 
@@ -171,6 +125,64 @@ namespace KustoSchemaTools.Changes
                 if (capacityPolicyChange != null)
                 {
                     changeSet.Changes.Add(capacityPolicyChange);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles workload group changes between old and new cluster configurations.
+        /// Processes both deletions and creations/updates of workload groups.
+        /// </summary>
+        /// <param name="oldCluster">The current/existing cluster configuration.</param>
+        /// <param name="newCluster">The desired cluster configuration.</param>
+        /// <param name="changeSet">The change set to add workload group changes to.</param>
+        /// <param name="log">Logger instance for recording the comparison process.</param>
+        private static void HandleWorkloadGroupChanges(Cluster oldCluster, Cluster newCluster, ClusterChangeSet changeSet, ILogger log)
+        {
+            // Handle workload group deletions first
+            var workloadGroupsToDelete = newCluster.Deletions?.WorkloadGroups ?? new List<string>();
+            foreach (var workloadGroupName in workloadGroupsToDelete)
+            {
+                var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == workloadGroupName);
+                if (existingWorkloadGroup != null)
+                {
+                    log.LogInformation($"Marking workload group '{workloadGroupName}' for deletion.");
+                    var deletionChange = new DeletionChange(workloadGroupName, "workload_group");
+                    changeSet.Changes.Add(deletionChange);
+                }
+                else
+                {
+                    log.LogWarning($"Workload group '{workloadGroupName}' marked for deletion but does not exist in the live cluster.");
+                }
+            }
+
+            // Handle workload group creations and updates
+            foreach (var newWorkloadGroup in newCluster.WorkloadGroups)
+            {
+                // Skip if this workload group is marked for deletion
+                if (workloadGroupsToDelete.Contains(newWorkloadGroup.WorkloadGroupName))
+                {
+                    log.LogInformation($"Skipping update to workload group {newWorkloadGroup.WorkloadGroupName} as it is marked for deletion.");
+                    continue;
+                }
+
+                var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == newWorkloadGroup.WorkloadGroupName);
+
+                var workloadGroupChange = ComparePolicy(
+                    "Workload Group",
+                    newWorkloadGroup.WorkloadGroupName,
+                    existingWorkloadGroup,
+                    newWorkloadGroup,
+                    wg => new List<DatabaseScriptContainer> {
+                        new DatabaseScriptContainer(
+                            existingWorkloadGroup == null ? "CreateWorkloadGroup" : "UpdateWorkloadGroup",
+                            5,
+                            existingWorkloadGroup == null ? wg.ToCreateScript() : wg.ToUpdateScript())
+                    });
+
+                if (workloadGroupChange != null)
+                {
+                    changeSet.Changes.Add(workloadGroupChange);
                 }
             }
         }
