@@ -34,6 +34,12 @@ namespace KustoSchemaTools.Model
         WeakAffinitizedByDatabase
     }
 
+    public enum RateLimitResourceKind
+    {
+        RequestCount,
+        TotalCpuSeconds
+    }
+
     public class WorkloadGroup : IEquatable<WorkloadGroup>
     {
         public required string WorkloadGroupName { get; set; }
@@ -78,12 +84,6 @@ namespace KustoSchemaTools.Model
 
             var workloadGroupPolicyJson = WorkloadGroupPolicy.ToJson();
             var script = $".alter-merge workload_group {WorkloadGroupName} ```{workloadGroupPolicyJson}```";
-            return script;
-        }
-        
-        public string ToDeleteScript()
-        {
-            var script = $".drop workload_group {WorkloadGroupName}";
             return script;
         }
     }
@@ -164,6 +164,15 @@ namespace KustoSchemaTools.Model
         {
             return HashCode.Combine(IsRelaxable, Value);
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class RequestLimitsPolicy : IEquatable<RequestLimitsPolicy>
@@ -226,6 +235,56 @@ namespace KustoSchemaTools.Model
             hc.Add(QueryResultsProgressiveUpdatePeriod);
             return hc.ToHashCode();
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
+    }
+
+    public class RateLimitProperties : IEquatable<RateLimitProperties>
+    {
+        [JsonProperty("MaxConcurrentRequests")]
+        public int? MaxConcurrentRequests { get; set; }
+
+        [JsonProperty("ResourceKind")]
+        public RateLimitResourceKind? ResourceKind { get; set; }
+
+        [JsonProperty("MaxUtilization")]
+        public double? MaxUtilization { get; set; }
+
+        [JsonProperty("TimeWindow")]
+        public TimeSpan? TimeWindow { get; set; }
+
+        public bool Equals(RateLimitProperties? other)
+        {
+            if (other is null) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return MaxConcurrentRequests == other.MaxConcurrentRequests &&
+                   ResourceKind == other.ResourceKind &&
+                   MaxUtilization == other.MaxUtilization &&
+                   TimeWindow == other.TimeWindow;
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as RateLimitProperties);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(MaxConcurrentRequests, ResourceKind, MaxUtilization, TimeWindow);
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class RequestRateLimitPolicy : IEquatable<RequestRateLimitPolicy>
@@ -242,7 +301,7 @@ namespace KustoSchemaTools.Model
         public RateLimitKind LimitKind { get; set; }
 
         [JsonProperty("Properties")]
-        public object Properties { get; set; } = new();
+        public RateLimitProperties? Properties { get; set; }
 
         public bool Equals(RequestRateLimitPolicy? other)
         {
@@ -251,7 +310,7 @@ namespace KustoSchemaTools.Model
             return IsEnabled == other.IsEnabled &&
                    Scope == other.Scope &&
                    LimitKind == other.LimitKind &&
-                   EqualityComparer<object>.Default.Equals(Properties, other.Properties);
+                   EqualityComparer<RateLimitProperties?>.Default.Equals(Properties, other.Properties);
         }
 
         public override bool Equals(object? obj) => Equals(obj as RequestRateLimitPolicy);
@@ -259,6 +318,15 @@ namespace KustoSchemaTools.Model
         public override int GetHashCode()
         {
             return HashCode.Combine(IsEnabled, Scope, LimitKind, Properties);
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
         }
     }
 
@@ -286,6 +354,15 @@ namespace KustoSchemaTools.Model
         {
             return HashCode.Combine(QueriesEnforcementLevel, CommandsEnforcementLevel);
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class QueryConsistencyPolicy : IEquatable<QueryConsistencyPolicy>
@@ -309,6 +386,15 @@ namespace KustoSchemaTools.Model
         public override int GetHashCode()
         {
             return HashCode.Combine(QueryConsistency, CachedResultsMaxAge);
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
         }
     }
 }
