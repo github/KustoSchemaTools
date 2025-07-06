@@ -178,12 +178,13 @@ namespace KustoSchemaTools.Changes
                 }
 
                 var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == newWorkloadGroup.WorkloadGroupName);
-                var scriptType = existingWorkloadGroup == null ? "ClusterWorkloadGroupCreateOrAlterCommand" : "ClusterWorkloadGroupAlterMergeCommand";
-                var scriptText = existingWorkloadGroup == null ? newWorkloadGroup.ToCreateScript() : newWorkloadGroup.ToUpdateScript();
                 
                 // Only create a change if the workload group policy is not null
                 if (newWorkloadGroup.WorkloadGroupPolicy != null)
                 {
+                    var scriptType = existingWorkloadGroup == null ? "ClusterWorkloadGroupCreateOrAlterCommand" : "ClusterWorkloadGroupAlterMergeCommand";
+                    var scriptText = existingWorkloadGroup == null ? newWorkloadGroup.ToCreateScript() : newWorkloadGroup.ToUpdateScript();
+                    
                     var workloadGroupChange = ComparePolicy(
                         "Workload Group",
                         newWorkloadGroup.WorkloadGroupName,
