@@ -167,17 +167,19 @@ namespace KustoSchemaTools.Changes
                 }
 
                 var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == newWorkloadGroup.WorkloadGroupName);
-
+                var scriptType = existingWorkloadGroup == null ? "ClusterWorkloadGroupCreateOrAlterCommand" : "ClusterWorkloadGroupAlterMergeCommand";
+                var scriptText = existingWorkloadGroup == null ? newWorkloadGroup.ToCreateScript() : newWorkloadGroup.ToUpdateScript();
                 var workloadGroupChange = ComparePolicy(
                     "Workload Group",
                     newWorkloadGroup.WorkloadGroupName,
-                    existingWorkloadGroup,
-                    newWorkloadGroup,
+                    existingWorkloadGroup?.WorkloadGroupPolicy,
+                    newWorkloadGroup.WorkloadGroupPolicy,
                     wg => new List<DatabaseScriptContainer> {
                         new DatabaseScriptContainer(
-                            existingWorkloadGroup == null ? "CreateWorkloadGroup" : "UpdateWorkloadGroup",
+                            scriptType,
                             5,
-                            existingWorkloadGroup == null ? wg.ToCreateScript() : wg.ToUpdateScript())
+                            scriptText
+                            )
                     });
 
                 if (workloadGroupChange != null)
