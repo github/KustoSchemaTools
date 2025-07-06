@@ -225,6 +225,9 @@ namespace KustoSchemaTools.Changes
             }
             else
             {
+                sb.AppendLine(":warning: **Warning**: It is strongly recommended to consult with Microsoft Support before making cluster configuration changes.");
+                sb.AppendLine();
+
                 foreach (var change in changeSet.Changes)
                 {
                     if (!string.IsNullOrEmpty(change.Markdown))
