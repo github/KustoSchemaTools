@@ -164,6 +164,15 @@ namespace KustoSchemaTools.Model
         {
             return HashCode.Combine(IsRelaxable, Value);
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class RequestLimitsPolicy : IEquatable<RequestLimitsPolicy>
@@ -226,6 +235,15 @@ namespace KustoSchemaTools.Model
             hc.Add(QueryResultsProgressiveUpdatePeriod);
             return hc.ToHashCode();
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class RequestRateLimitPolicy : IEquatable<RequestRateLimitPolicy>
@@ -260,6 +278,15 @@ namespace KustoSchemaTools.Model
         {
             return HashCode.Combine(IsEnabled, Scope, LimitKind, Properties);
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class RequestRateLimitsEnforcementPolicy : IEquatable<RequestRateLimitsEnforcementPolicy>
@@ -286,6 +313,15 @@ namespace KustoSchemaTools.Model
         {
             return HashCode.Combine(QueriesEnforcementLevel, CommandsEnforcementLevel);
         }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
     }
 
     public class QueryConsistencyPolicy : IEquatable<QueryConsistencyPolicy>
@@ -309,6 +345,15 @@ namespace KustoSchemaTools.Model
         public override int GetHashCode()
         {
             return HashCode.Combine(QueryConsistency, CachedResultsMaxAge);
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
         }
     }
 }
