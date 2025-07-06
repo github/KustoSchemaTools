@@ -30,26 +30,10 @@ namespace KustoSchemaTools.Changes
             var changeSet = new ClusterChangeSet(clusterName, oldCluster, newCluster);
 
             log.LogInformation($"Analyzing capacity policy changes for cluster {clusterName}...");
-            if (newCluster.CapacityPolicy == null) {
-                log.LogInformation("No capacity policy defined in the new cluster configuration.");
-            } else {
-                var capacityPolicyChange = ComparePolicy(
-                    "Cluster Capacity Policy",
-                    "default",
-                    oldCluster.CapacityPolicy,
-                    newCluster.CapacityPolicy,
-                    policy => new List<DatabaseScriptContainer> {
-                    new DatabaseScriptContainer("AlterMergeClusterCapacityPolicy", 10, policy.ToUpdateScript())
-                    });
-
-                if (capacityPolicyChange != null)
-                {
-                    changeSet.Changes.Add(capacityPolicyChange);
-                }
-            }
+            HandleCapacityPolicyChanges(oldCluster, newCluster, changeSet, log);
 
             log.LogInformation($"Analyzing workload group changes for cluster {clusterName}...");
-            
+
             // Handle workload group deletions first
             var workloadGroupsToDelete = newCluster.Deletions?.WorkloadGroups ?? new List<string>();
             foreach (var workloadGroupName in workloadGroupsToDelete)
@@ -135,7 +119,7 @@ namespace KustoSchemaTools.Changes
 
             var changedProperties = new List<string>();
             var properties = typeof(T).GetProperties().Where(p => p.CanRead && p.CanWrite);
-            
+
             foreach (var prop in properties)
             {
                 var oldValue = oldPolicy != null ? prop.GetValue(oldPolicy) : null;
@@ -157,6 +141,38 @@ namespace KustoSchemaTools.Changes
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Handles capacity policy changes between old and new cluster configurations.
+        /// Compares the capacity policies and adds any necessary changes to the change set.
+        /// </summary>
+        /// <param name="oldCluster">The current/existing cluster configuration.</param>
+        /// <param name="newCluster">The desired cluster configuration.</param>
+        /// <param name="changeSet">The change set to add capacity policy changes to.</param>
+        /// <param name="log">Logger instance for recording the comparison process.</param>
+        private static void HandleCapacityPolicyChanges(Cluster oldCluster, Cluster newCluster, ClusterChangeSet changeSet, ILogger log)
+        {
+            if (newCluster.CapacityPolicy == null)
+            {
+                log.LogInformation("No capacity policy defined in the new cluster configuration.");
+            }
+            else
+            {
+                var capacityPolicyChange = ComparePolicy(
+                    "Cluster Capacity Policy",
+                    "default",
+                    oldCluster.CapacityPolicy,
+                    newCluster.CapacityPolicy,
+                    policy => new List<DatabaseScriptContainer> {
+                    new DatabaseScriptContainer("AlterMergeClusterCapacityPolicy", 10, policy.ToUpdateScript())
+                    });
+
+                if (capacityPolicyChange != null)
+                {
+                    changeSet.Changes.Add(capacityPolicyChange);
+                }
+            }
         }
     }
 }
