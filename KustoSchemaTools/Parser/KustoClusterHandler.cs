@@ -55,7 +55,7 @@ namespace KustoSchemaTools
                         var workloadGroupPolicy = JsonConvert.DeserializeObject<WorkloadGroupPolicy>(workloadGroupJson);
                         var workloadGroup = new WorkloadGroup 
                         { 
-                            WorkloadGroupName = workloadGroupName!,
+                            WorkloadGroupName = !string.IsNullOrEmpty(workloadGroupName) ? workloadGroupName : throw new InvalidOperationException("WorkloadGroupName cannot be null or empty."),
                             WorkloadGroupPolicy = workloadGroupPolicy
                         };
                         cluster.WorkloadGroups.Add(workloadGroup);
