@@ -383,7 +383,7 @@ namespace KustoSchemaTools.Tests.Parser
             mockCapacityReader.SetupSequence(x => x.Read())
                 .Returns(true)   // First call returns true (data available)
                 .Returns(false); // Second call returns false (no more data)
-            mockCapacityReader.Setup(x => x["Policy"]).Returns(null as object); // Null policy
+            mockCapacityReader.Setup(x => x["Policy"]).Returns(null); // Null policy
 
             var mockWorkloadGroupsReader = new Mock<IDataReader>();
             mockWorkloadGroupsReader.Setup(x => x.Read()).Returns(false); // No workload groups
