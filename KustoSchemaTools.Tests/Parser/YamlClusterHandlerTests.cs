@@ -116,5 +116,232 @@ namespace KustoSchemaTools.Tests.Parser
                     File.Delete(tempFilePath);
             }
         }
+
+        [Fact]
+        public async Task LoadAsync_ClusterMissingName_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- url: test.eastus
+  workloadGroups: []
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
+                Assert.Contains("Cluster at index 0 is missing a required 'name' property", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_ClusterMissingUrl_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- name: testcluster
+  workloadGroups: []
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
+                Assert.Contains("Cluster 'testcluster' is missing a required 'url' property", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_WorkloadGroupMissingName_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- name: testcluster
+  url: testcluster.eastus
+  workloadGroups:
+  - workloadGroupPolicy:
+      requestRateLimitsEnforcementPolicy:
+        commandsEnforcementLevel: Cluster
+  - workloadGroupName: validgroup
+    workloadGroupPolicy:
+      requestRateLimitPolicies: []
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
+                Assert.Contains("Cluster 'testcluster' has a workload group at index 0 that is missing a required 'workloadGroupName' property", exception.Message);
+                Assert.Contains("All workload groups must have a non-empty name", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_WorkloadGroupEmptyName_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- name: testcluster
+  url: testcluster.eastus
+  workloadGroups:
+  - workloadGroupName: ''
+    workloadGroupPolicy:
+      requestRateLimitPolicies: []
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
+                Assert.Contains("Cluster 'testcluster' has a workload group at index 0 that is missing a required 'workloadGroupName' property", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_WorkloadGroupWhitespaceOnlyName_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- name: testcluster
+  url: testcluster.eastus
+  workloadGroups:
+  - workloadGroupName: '   '
+    workloadGroupPolicy:
+      requestRateLimitPolicies: []
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act & Assert
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.LoadAsync());
+                Assert.Contains("Cluster 'testcluster' has a workload group at index 0 that is missing a required 'workloadGroupName' property", exception.Message);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_ValidWorkloadGroups_DoesNotThrow()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- name: testcluster
+  url: testcluster.eastus
+  workloadGroups:
+  - workloadGroupName: group1
+    workloadGroupPolicy:
+      requestRateLimitPolicies:
+        - limitKind: ConcurrentRequests
+          scope: WorkloadGroup
+          isEnabled: true
+          properties:
+            maxConcurrentRequests: 100
+  - workloadGroupName: group2
+    workloadGroupPolicy:
+      requestRateLimitsEnforcementPolicy:
+        commandsEnforcementLevel: Cluster
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act
+                var result = await handler.LoadAsync();
+
+                // Assert
+                Assert.NotNull(result);
+                Assert.Single(result);
+                var cluster = result[0];
+                Assert.Equal("testcluster", cluster.Name);
+                Assert.Equal("testcluster.eastus", cluster.Url);
+                Assert.Equal(2, cluster.WorkloadGroups.Count);
+                Assert.Equal("group1", cluster.WorkloadGroups[0].WorkloadGroupName);
+                Assert.Equal("group2", cluster.WorkloadGroups[1].WorkloadGroupName);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadAsync_ClusterWithoutWorkloadGroups_DoesNotThrow()
+        {
+            // Arrange
+            var tempFilePath = Path.GetTempFileName();
+            try
+            {
+                var yamlContent = @"
+connections:
+- name: testcluster
+  url: testcluster.eastus
+";
+                await File.WriteAllTextAsync(tempFilePath, yamlContent);
+                var handler = new YamlClusterHandler(tempFilePath);
+
+                // Act
+                var result = await handler.LoadAsync();
+
+                // Assert
+                Assert.NotNull(result);
+                Assert.Single(result);
+                var cluster = result[0];
+                Assert.Equal("testcluster", cluster.Name);
+                Assert.Equal("testcluster.eastus", cluster.Url);
+                Assert.Empty(cluster.WorkloadGroups);
+            }
+            finally
+            {
+                if (File.Exists(tempFilePath))
+                    File.Delete(tempFilePath);
+            }
+        }
     }
 }
