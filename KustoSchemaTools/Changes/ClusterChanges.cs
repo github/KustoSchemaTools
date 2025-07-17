@@ -82,7 +82,6 @@ namespace KustoSchemaTools.Changes
             {
                 var oldValue = oldPolicy != null ? prop.GetValue(oldPolicy) : null;
                 var newValue = prop.GetValue(newPolicy);
-
                 if (newValue != null && !object.Equals(oldValue, newValue))
                 {
                     var oldValueStr = oldValue?.ToString() ?? "Not Set";
@@ -156,7 +155,7 @@ namespace KustoSchemaTools.Changes
 
                     // Replace the header in the deletion markdown
                     var originalMarkdown = deletionChange.Markdown;
-                    var modifiedMarkdown = originalMarkdown.Replace($"## {workloadGroupName}", $"#### :heavy_minus_sign: Drop {workloadGroupName}");
+                    var modifiedMarkdown = originalMarkdown.Replace($"## {workloadGroupName}", $"### Drop Workload Group {workloadGroupName}");
                     deletionChange.Markdown = modifiedMarkdown;
 
                     changeSet.Changes.Add(deletionChange);
