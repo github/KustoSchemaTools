@@ -452,7 +452,7 @@ namespace KustoSchemaTools.Tests.Changes
                         MaxExecutionTime = new PolicyValue<TimeSpan> { Value = maxExecutionTime, IsRelaxable = true },
                         MaxResultRecords = new PolicyValue<long> { Value = 10000, IsRelaxable = false }
                     },
-                    RequestRateLimitPolicies = new List<RequestRateLimitPolicy>
+                    RequestRateLimitPolicies = new PolicyList<RequestRateLimitPolicy>
                     {
                         new RequestRateLimitPolicy
                         {

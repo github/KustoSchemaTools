@@ -94,7 +94,7 @@ namespace KustoSchemaTools.Model
         public RequestLimitsPolicy? RequestLimitsPolicy { get; set; }
 
         [JsonProperty("RequestRateLimitPolicies")]
-        public List<RequestRateLimitPolicy>? RequestRateLimitPolicies { get; set; }
+        public PolicyList<RequestRateLimitPolicy>? RequestRateLimitPolicies { get; set; }
 
         [JsonProperty("RequestRateLimitsEnforcementPolicy")]
         public RequestRateLimitsEnforcementPolicy? RequestRateLimitsEnforcementPolicy { get; set; }
@@ -107,9 +107,7 @@ namespace KustoSchemaTools.Model
             if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return EqualityComparer<RequestLimitsPolicy?>.Default.Equals(RequestLimitsPolicy, other.RequestLimitsPolicy) &&
-                   (RequestRateLimitPolicies == null && other.RequestRateLimitPolicies == null ||
-                    RequestRateLimitPolicies != null && other.RequestRateLimitPolicies != null &&
-                    RequestRateLimitPolicies.SequenceEqual(other.RequestRateLimitPolicies)) &&
+                   EqualityComparer<PolicyList<RequestRateLimitPolicy>?>.Default.Equals(RequestRateLimitPolicies, other.RequestRateLimitPolicies) &&
                    EqualityComparer<RequestRateLimitsEnforcementPolicy?>.Default.Equals(RequestRateLimitsEnforcementPolicy, other.RequestRateLimitsEnforcementPolicy) &&
                    EqualityComparer<QueryConsistencyPolicy?>.Default.Equals(QueryConsistencyPolicy, other.QueryConsistencyPolicy);
         }
@@ -120,15 +118,9 @@ namespace KustoSchemaTools.Model
         {
             var hc = new HashCode();
             hc.Add(RequestLimitsPolicy);
+            hc.Add(RequestRateLimitPolicies);
             hc.Add(RequestRateLimitsEnforcementPolicy);
             hc.Add(QueryConsistencyPolicy);
-            if (RequestRateLimitPolicies != null)
-            {
-                foreach (var policy in RequestRateLimitPolicies)
-                {
-                    hc.Add(policy);
-                }
-            }
             return hc.ToHashCode();
         }
 
@@ -386,6 +378,44 @@ namespace KustoSchemaTools.Model
         public override int GetHashCode()
         {
             return HashCode.Combine(QueryConsistency, CachedResultsMaxAge);
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+        }
+    }
+
+    public class PolicyList<T> : List<T> where T : IEquatable<T>
+    {
+        public override bool Equals(object? obj)
+        {
+            if (obj is not List<T> other)
+            {
+                return false;
+            }
+            if (Count != other.Count)
+            {
+                return false;
+            }
+            // Use HashSet for efficient, order-independent comparison
+            return new HashSet<T>(this).SetEquals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = 0;
+            // Order-independent hash code calculation
+            foreach (T item in this.OrderBy(i => i.GetHashCode()))
+            {
+                // XORing hash codes is a common technique for order-independent hashing
+                hashCode ^= item.GetHashCode();
+            }
+            return hashCode;
         }
 
         public override string ToString()
