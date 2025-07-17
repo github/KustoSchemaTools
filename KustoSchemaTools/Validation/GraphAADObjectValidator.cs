@@ -92,7 +92,7 @@ namespace KustoSchemaTools.Validation
                         return await ValidateServicePrincipalAsync(cleanId, result);
                     default:
                         // Try to auto-detect the type
-                        return await ValidateUnknownTypeAsync(cleanId, result);
+                        return await ValidateUnknownTypeAsync(cleanId, result, id); // Pass original id
                 }
             }
             catch (Exception ex)
@@ -199,6 +199,7 @@ namespace KustoSchemaTools.Validation
         {
             try
             {
+                // First try direct lookup by Service Principal Object ID
                 var servicePrincipal = await _graphClient.ServicePrincipals[id].GetAsync();
                 if (servicePrincipal != null)
                 {
@@ -206,29 +207,64 @@ namespace KustoSchemaTools.Validation
                     result.Exists = true;
                     result.Name = servicePrincipal.DisplayName ?? id;
                     result.Type = AADObjectType.ServicePrincipal;
-                    _logger.LogDebug("Service Principal {Id} found: {Name}", id, result.Name);
-                }
-                else
-                {
-                    result.IsValid = false;
-                    result.Exists = false;
-                    result.ErrorMessage = "Service Principal not found";
+                    _logger.LogDebug("Service Principal {Id} found by Object ID: {Name}", id, result.Name);
+                    return result;
                 }
             }
             catch (Microsoft.Graph.Models.ODataErrors.ODataError odataError) when (odataError.Error?.Code == "Request_ResourceNotFound")
             {
+                // If not found by Object ID, try to find by Application ID
+                try
+                {
+                    var servicePrincipals = await _graphClient.ServicePrincipals
+                        .GetAsync(requestConfiguration => 
+                        {
+                            requestConfiguration.QueryParameters.Filter = $"appId eq '{id}'";
+                            requestConfiguration.QueryParameters.Top = 1;
+                        });
+
+                    var servicePrincipal = servicePrincipals?.Value?.FirstOrDefault();
+                    if (servicePrincipal != null)
+                    {
+                        result.IsValid = true;
+                        result.Exists = true;
+                        result.Name = servicePrincipal.DisplayName ?? id;
+                        result.Type = AADObjectType.ServicePrincipal;
+                        _logger.LogDebug("Service Principal {Id} found by Application ID: {Name}", id, result.Name);
+                        return result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug("Failed to query Service Principal by Application ID {Id}: {Error}", id, ex.Message);
+                }
+
                 result.IsValid = false;
                 result.Exists = false;
                 result.ErrorMessage = "Service Principal does not exist in the tenant";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating Service Principal {Id}", id);
+                result.IsValid = false;
+                result.Exists = false;
+                result.ErrorMessage = $"Service Principal validation failed: {ex.Message}";
             }
 
             return result;
         }
 
-        private async Task<AADValidationResult> ValidateUnknownTypeAsync(string id, AADValidationResult result)
+        private async Task<AADValidationResult> ValidateUnknownTypeAsync(string id, AADValidationResult result, string? originalId = null)
         {
-            // Try different types in order of likelihood
-            var types = new[] { AADObjectType.User, AADObjectType.Group, AADObjectType.Application, AADObjectType.ServicePrincipal };
+            // Determine the order to try types based on the original ID format
+            var idToCheck = originalId ?? id;
+            var types = new AADObjectType[] { AADObjectType.User, AADObjectType.Group, AADObjectType.Application, AADObjectType.ServicePrincipal };
+            
+            // For aadapp= prefixes, try ServicePrincipal first as it's more common in Kusto
+            if (idToCheck.StartsWith("aadapp=", StringComparison.OrdinalIgnoreCase))
+            {
+                types = new[] { AADObjectType.ServicePrincipal, AADObjectType.Application, AADObjectType.User, AADObjectType.Group };
+            }
 
             foreach (var type in types)
             {
@@ -286,7 +322,7 @@ namespace KustoSchemaTools.Validation
             if (id.StartsWith("aadgroup=", StringComparison.OrdinalIgnoreCase))
                 return AADObjectType.Group;
             if (id.StartsWith("aadapp=", StringComparison.OrdinalIgnoreCase))
-                return AADObjectType.Application;
+                return AADObjectType.Unknown; // aadapp= can be either Application or ServicePrincipal, so try both
 
             // Check format patterns
             if (IsEmail(cleanId))
