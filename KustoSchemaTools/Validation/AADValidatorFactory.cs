@@ -62,11 +62,18 @@ namespace KustoSchemaTools.Validation
             
             await Task.Delay(10); // Simulate async operation
             
+            // Simulate failure for obviously invalid objects OR invalid formats
+            var hasInvalidContent = (aadObject?.Id?.Contains("invalid-domain.com") == true ||
+                                   aadObject?.Id?.Contains("definitely-invalid") == true);
+            var hasValidFormat = IsValidAADFormat(aadObject?.Id);
+            var isValidMockPrincipal = !hasInvalidContent && hasValidFormat;
+            
             return new AADValidationResult
             {
                 Id = aadObject?.Id ?? "unknown",
                 Type = DetermineAADObjectType(aadObject?.Id ?? ""),
-                IsValid = true,
+                IsValid = isValidMockPrincipal,
+                ErrorMessage = isValidMockPrincipal ? "" : "Mock validation: Principal appears to be invalid or has invalid format",
                 ValidatedAt = DateTime.UtcNow
             };
         }
@@ -83,17 +90,72 @@ namespace KustoSchemaTools.Validation
             
             await Task.Delay(10); // Simulate async operation
             
+            // For ById validation, we only check for obviously invalid content, not format
+            // since the ID part doesn't include the aaduser=/aadgroup=/aadapp= prefix
+            var isValidMockPrincipal = !(id?.Contains("invalid-domain.com") == true ||
+                                       id?.Contains("definitely-invalid") == true) &&
+                                       !string.IsNullOrWhiteSpace(id);
+            
             return new AADValidationResult
             {
-                Id = id,
+                Id = id ?? "unknown",
                 Type = type,
-                IsValid = true,
+                IsValid = isValidMockPrincipal,
+                ErrorMessage = isValidMockPrincipal ? "" : "Mock validation: Principal appears to be invalid or has invalid format",
                 ValidatedAt = DateTime.UtcNow
             };
         }
 
+        private bool IsValidAADFormat(string? id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return false;
+
+            // Valid formats per Microsoft documentation:
+            // https://learn.microsoft.com/en-us/kusto/management/reference-security-principals#referencing-microsoft-entra-principals-and-groups
+            
+            // User formats:
+            // - aaduser=UPN (implicit)
+            // - aaduser=UPN;TenantId or aaduser=ObjectID;TenantId (explicit with ID)
+            // - aaduser=UPN;TenantName or aaduser=ObjectID;TenantName (explicit with name)
+            if (id.StartsWith("aaduser=", StringComparison.OrdinalIgnoreCase))
+            {
+                var userPart = id.Substring(8); // Remove "aaduser=" prefix
+                // User can be implicit (no semicolon) or explicit (with semicolon and tenant)
+                return !string.IsNullOrWhiteSpace(userPart);
+            }
+
+            // Group formats:
+            // - aadgroup=GroupEmailAddress (implicit)
+            // - aadgroup=GroupDisplayName;TenantId or aadgroup=GroupObjectId;TenantId (explicit with ID)
+            // - aadgroup=GroupDisplayName;TenantName or aadgroup=GroupObjectId;TenantName (explicit with name)
+            if (id.StartsWith("aadgroup=", StringComparison.OrdinalIgnoreCase))
+            {
+                var groupPart = id.Substring(9); // Remove "aadgroup=" prefix
+                // Group can be implicit (no semicolon) or explicit (with semicolon and tenant)
+                return !string.IsNullOrWhiteSpace(groupPart);
+            }
+
+            // App formats:
+            // - aadapp=ApplicationDisplayName;TenantId or aadapp=ApplicationId;TenantId (explicit with ID)
+            // - aadapp=ApplicationDisplayName;TenantName or aadapp=ApplicationId;TenantName (explicit with name)
+            // NOTE: Apps have NO implicit format - must always specify tenant
+            if (id.StartsWith("aadapp=", StringComparison.OrdinalIgnoreCase))
+            {
+                var appPart = id.Substring(7); // Remove "aadapp=" prefix
+                // App MUST have a semicolon (tenant is required)
+                return !string.IsNullOrWhiteSpace(appPart) && appPart.Contains(';');
+            }
+
+            // Unknown format
+            return false;
+        }
+
         private AADObjectType DetermineAADObjectType(string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+                return AADObjectType.Unknown;
+
             if (id.StartsWith("aaduser=", StringComparison.OrdinalIgnoreCase))
                 return AADObjectType.User;
             if (id.StartsWith("aadgroup=", StringComparison.OrdinalIgnoreCase))

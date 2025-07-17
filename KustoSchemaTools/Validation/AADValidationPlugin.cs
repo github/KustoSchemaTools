@@ -1,5 +1,6 @@
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
+using KustoSchemaTools.Exceptions;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
@@ -168,7 +169,7 @@ namespace KustoSchemaTools.Validation
         }
 
         /// <summary>
-        /// Processes validation results and logs issues
+        /// Processes validation results and throws exception if any validation fails
         /// </summary>
         private Task ProcessValidationResults(List<AADValidationResult> results, Database database)
         {
@@ -178,20 +179,34 @@ namespace KustoSchemaTools.Validation
             _logger.LogInformation("AAD validation completed: {ValidCount} valid, {InvalidCount} invalid", 
                 validResults.Count, invalidResults.Count);
 
-            foreach (var invalid in invalidResults)
+            // Log details for debugging
+            foreach (var valid in validResults)
             {
-                _logger.LogWarning("Invalid AAD object: {Id} - {Error}", invalid.Id, invalid.ErrorMessage);
+                var name = !string.IsNullOrEmpty(valid.Name) ? $" ({valid.Name})" : "";
+                _logger.LogDebug("Valid AAD object: {Id} ({Type}){Name}", valid.Id, valid.Type, name);
             }
 
-            // You could also add metadata to the database about validation results
+            foreach (var invalid in invalidResults)
+            {
+                _logger.LogWarning("Invalid AAD object: {Id} ({Type}) - {Error}", invalid.Id, invalid.Type, invalid.ErrorMessage);
+            }
+
+            // If AAD validation is enabled and any validations failed, throw exception to fail fast
             if (invalidResults.Any())
+            {
+                _logger.LogError("AAD validation failed - terminating execution early");
+                throw new AADValidationException(results);
+            }
+
+            // Add metadata about successful validation
+            if (results.Any())
             {
                 var metadata = new Metadata
                 {
                     EntityName = database.Name,
                     EntityType = "Database",
                     Type = "AADValidation",
-                    Value = $"Found {invalidResults.Count} invalid AAD objects"
+                    Value = $"All {validResults.Count} AAD objects validated successfully"
                 };
 
                 database.Metadata?.Add(metadata);
