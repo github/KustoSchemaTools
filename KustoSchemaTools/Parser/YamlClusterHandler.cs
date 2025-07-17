@@ -30,11 +30,51 @@ namespace KustoSchemaTools
 
                 var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFileContent);
 
+                ValidateClusters(clusters);
+
                 return clusters.Connections.ToList();
             }
             catch (Exception ex) when (!(ex is FileNotFoundException || ex is InvalidOperationException))
             {
                 throw new InvalidOperationException($"Failed to parse clusters file '{_filePath}': {ex.Message}", ex);
+            }
+        }
+
+        private static void ValidateClusters(Clusters clusters)
+        {
+            if (clusters?.Connections == null)
+                return;
+
+            for (int clusterIndex = 0; clusterIndex < clusters.Connections.Count; clusterIndex++)
+            {
+                var cluster = clusters.Connections[clusterIndex];
+                
+                // Validate cluster basic properties
+                if (string.IsNullOrWhiteSpace(cluster.Name))
+                {
+                    throw new InvalidOperationException($"Cluster at index {clusterIndex} is missing a required 'name' property.");
+                }
+                
+                if (string.IsNullOrWhiteSpace(cluster.Url))
+                {
+                    throw new InvalidOperationException($"Cluster '{cluster.Name}' is missing a required 'url' property.");
+                }
+                
+                // Validate workload groups
+                if (cluster.WorkloadGroups?.Count > 0)
+                {
+                    for (int wgIndex = 0; wgIndex < cluster.WorkloadGroups.Count; wgIndex++)
+                    {
+                        var workloadGroup = cluster.WorkloadGroups[wgIndex];
+                        
+                        if (string.IsNullOrWhiteSpace(workloadGroup.WorkloadGroupName))
+                        {
+                            throw new InvalidOperationException(
+                                $"Cluster '{cluster.Name}' has a workload group at index {wgIndex} that is missing a required 'workloadGroupName' property. " +
+                                "All workload groups must have a non-empty name.");
+                        }
+                    }
+                }
             }
         }
     }

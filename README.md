@@ -38,7 +38,7 @@ The `KustoSchemaHandler` is the central place for synching schemas between yaml 
 
 ### Cluster configuration management
 
-Cluster configuration changes are handled by the `KustoClusterOrchestrator`. Currently, the only supported feature is [`Capacity Policies`](https://learn.microsoft.com/en-us/kusto/management/capacity-policy?view=azure-data-explorer). The orchestrator expects a file path to a configuration file. A key design principle is that you only need to specify the properties you wish to set or change. Any property omitted in your policy file will be ignored, preserving its current value on the cluster.
+Cluster configuration changes are handled by the `KustoClusterOrchestrator`. Currently supported features include [`Capacity Policies`](https://learn.microsoft.com/en-us/kusto/management/capacity-policy?view=azure-data-explorer) and [`Workload Groups`](https://learn.microsoft.com/en-us/kusto/management/workload-groups?view=azure-data-explorer). The orchestrator expects a file path to a configuration file. A key design principle is that you only need to specify the properties you wish to set or change. Any property omitted in your policy file will be ignored, preserving its current value on the cluster.
 A sample file could look like this:
 
 ```yaml
@@ -54,14 +54,19 @@ connections:
       maximumConcurrentOperationsPerNode: 3
     extentsPurgeRebuildCapacity:
       maximumConcurrentOperationsPerNode: 1
+  workloadGroups:
+  - workloadGroupName: DataScience
+    workloadGroupPolicy:
+      requestRateLimitsEnforcementPolicy:
+        commandsEnforcementLevel: Cluster
 ```
 
 The `KustoClusterOrchestrator` coordinates between cluster handlers to manage cluster configuration changes:
 
 1. **Loading Configuration**: Uses `YamlClusterHandler` to parse the YAML configuration file and load the desired cluster state
-2. **Reading Current State**: Uses `KustoClusterHandler` to connect to each live cluster and retrieve the current capacity policy settings
+2. **Reading Current State**: Uses `KustoClusterHandler` to connect to each live cluster and retrieve the current capacity policy and workload group settings
 3. **Generating Changes**: Compares the desired state (from YAML) with the current state (from Kusto) to identify differences
-4. **Creating Scripts**: Generates the necessary Kusto control commands (like `.alter-merge cluster policy capacity`) to apply the changes
+4. **Creating Scripts**: Generates the necessary Kusto control commands (like `.alter-merge cluster policy capacity` and `.create-or-alter workload_group`) to apply the changes
 5. **Applying Updates**: Executes the generated scripts against the live clusters to synchronize them with the desired configuration
 
 Currently no plugins are supported. The orchestrator expects all cluster configuration in a central file.
@@ -70,6 +75,9 @@ Currently no plugins are supported. The orchestrator expects all cluster configu
 
 Currently following features are supported:
 
+* Cluster
+    * Capacity Policies
+    * Workload Groups
 * Database
     * Permissions
     * Default Retention

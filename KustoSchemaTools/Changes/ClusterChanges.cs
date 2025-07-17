@@ -1,6 +1,7 @@
 using KustoSchemaTools.Model;
 using Microsoft.Extensions.Logging;
 using Kusto.Language;
+using System.Text;
 
 namespace KustoSchemaTools.Changes
 {
@@ -30,23 +31,10 @@ namespace KustoSchemaTools.Changes
             var changeSet = new ClusterChangeSet(clusterName, oldCluster, newCluster);
 
             log.LogInformation($"Analyzing capacity policy changes for cluster {clusterName}...");
-            if (newCluster.CapacityPolicy == null) {
-                log.LogInformation("No capacity policy defined in the new cluster configuration.");
-            } else {
-                var capacityPolicyChange = ComparePolicy(
-                    "Cluster Capacity Policy",
-                    "default",
-                    oldCluster.CapacityPolicy,
-                    newCluster.CapacityPolicy,
-                    policy => new List<DatabaseScriptContainer> {
-                    new DatabaseScriptContainer("AlterMergeClusterCapacityPolicy", 10, policy.ToUpdateScript())
-                    });
+            HandleCapacityPolicyChanges(oldCluster, newCluster, changeSet, log);
 
-                if (capacityPolicyChange != null)
-                {
-                    changeSet.Changes.Add(capacityPolicyChange);
-                }
-            }
+            log.LogInformation($"Analyzing workload group changes for cluster {clusterName}...");
+            HandleWorkloadGroupChanges(oldCluster, newCluster, changeSet, log);
 
             changeSet.Scripts.AddRange(changeSet.Changes.SelectMany(c => c.Scripts));
 
@@ -57,6 +45,9 @@ namespace KustoSchemaTools.Changes
                 var diagnostics = code.GetDiagnostics();
                 script.IsValid = !diagnostics.Any();
             }
+
+            changeSet.Markdown = GenerateClusterMarkdown(changeSet);
+
             return changeSet;
         }
 
@@ -86,7 +77,7 @@ namespace KustoSchemaTools.Changes
 
             var changedProperties = new List<string>();
             var properties = typeof(T).GetProperties().Where(p => p.CanRead && p.CanWrite);
-            
+
             foreach (var prop in properties)
             {
                 var oldValue = oldPolicy != null ? prop.GetValue(oldPolicy) : null;
@@ -102,12 +93,165 @@ namespace KustoSchemaTools.Changes
 
             if (changedProperties.Any())
             {
-                policyChange.Markdown = $"## {entityType} Changes\n\n{string.Join("\n", changedProperties)}";
+                var action = oldPolicy == null ? "Create" : "Update";
+                policyChange.Markdown = $"### {action} {entityType} `{entityName}`\n\n{string.Join("\n", changedProperties)}";
                 policyChange.Scripts.AddRange(scriptGenerator(newPolicy));
                 return policyChange;
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Handles capacity policy changes between old and new cluster configurations.
+        /// Compares the capacity policies and adds any necessary changes to the change set.
+        /// </summary>
+        /// <param name="oldCluster">The current/existing cluster configuration.</param>
+        /// <param name="newCluster">The desired cluster configuration.</param>
+        /// <param name="changeSet">The change set to add capacity policy changes to.</param>
+        /// <param name="log">Logger instance for recording the comparison process.</param>
+        private static void HandleCapacityPolicyChanges(Cluster oldCluster, Cluster newCluster, ClusterChangeSet changeSet, ILogger log)
+        {
+            if (newCluster.CapacityPolicy == null)
+            {
+                log.LogInformation("No capacity policy defined in the new cluster configuration.");
+            }
+            else
+            {
+                var capacityPolicyChange = ComparePolicy(
+                    "Capacity Policy",
+                    "default",
+                    oldCluster.CapacityPolicy,
+                    newCluster.CapacityPolicy,
+                    policy => new List<DatabaseScriptContainer> {
+                    new DatabaseScriptContainer("AlterMergeClusterCapacityPolicy", 10, policy.ToUpdateScript())
+                    });
+
+                if (capacityPolicyChange != null)
+                {
+                    changeSet.Changes.Add(capacityPolicyChange);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles workload group changes between old and new cluster configurations.
+        /// Processes both deletions and creations/updates of workload groups.
+        /// </summary>
+        /// <param name="oldCluster">The current/existing cluster configuration.</param>
+        /// <param name="newCluster">The desired cluster configuration.</param>
+        /// <param name="changeSet">The change set to add workload group changes to.</param>
+        /// <param name="log">Logger instance for recording the comparison process.</param>
+        private static void HandleWorkloadGroupChanges(Cluster oldCluster, Cluster newCluster, ClusterChangeSet changeSet, ILogger log)
+        {
+            // Handle workload group deletions first
+            var workloadGroupsToDelete = newCluster.Deletions?.WorkloadGroups ?? new List<string>();
+            foreach (var workloadGroupName in workloadGroupsToDelete)
+            {
+                var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == workloadGroupName);
+                if (existingWorkloadGroup != null)
+                {
+                    log.LogInformation($"Marking workload group '{workloadGroupName}' for deletion.");
+                    var deletionChange = new DeletionChange(workloadGroupName, "workload_group");
+
+                    // Replace the header in the deletion markdown
+                    var originalMarkdown = deletionChange.Markdown;
+                    var modifiedMarkdown = originalMarkdown.Replace($"## {workloadGroupName}", $"#### :heavy_minus_sign: Drop {workloadGroupName}");
+                    deletionChange.Markdown = modifiedMarkdown;
+
+                    changeSet.Changes.Add(deletionChange);
+                }
+                else
+                {
+                    log.LogWarning($"Workload group '{workloadGroupName}' marked for deletion but does not exist in the live cluster.");
+                }
+            }
+
+            // Handle workload group creations and updates
+            foreach (var newWorkloadGroup in newCluster.WorkloadGroups)
+            {
+                // Skip if this workload group is marked for deletion
+                if (workloadGroupsToDelete.Contains(newWorkloadGroup.WorkloadGroupName))
+                {
+                    log.LogInformation($"Skipping update to workload group {newWorkloadGroup.WorkloadGroupName} as it is marked for deletion.");
+                    continue;
+                }
+
+                var existingWorkloadGroup = oldCluster.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == newWorkloadGroup.WorkloadGroupName);
+                
+                // Only create a change if the workload group policy is not null
+                if (newWorkloadGroup.WorkloadGroupPolicy != null)
+                {
+                    var scriptType = existingWorkloadGroup == null ? "ClusterWorkloadGroupCreateOrAlterCommand" : "ClusterWorkloadGroupAlterMergeCommand";
+                    var scriptText = existingWorkloadGroup == null ? newWorkloadGroup.ToCreateScript() : newWorkloadGroup.ToUpdateScript();
+                    
+                    var workloadGroupChange = ComparePolicy(
+                        "Workload Group",
+                        newWorkloadGroup.WorkloadGroupName,
+                        existingWorkloadGroup?.WorkloadGroupPolicy,
+                        newWorkloadGroup.WorkloadGroupPolicy,
+                        wg => new List<DatabaseScriptContainer> {
+                            new DatabaseScriptContainer(
+                                scriptType,
+                                5,
+                                scriptText
+                                )
+                        });
+
+                    if (workloadGroupChange != null)
+                    {
+                        changeSet.Changes.Add(workloadGroupChange);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generates a markdown representation of all cluster changes.
+        /// </summary>
+        /// <param name="changeSet">The cluster change set containing all detected changes.</param>
+        /// <returns>A formatted markdown string documenting all changes and scripts.</returns>
+        private static string GenerateClusterMarkdown(ClusterChangeSet changeSet)
+        {
+            var sb = new StringBuilder();
+            
+            sb.AppendLine($"## Cluster: {changeSet.Entity}");
+            sb.AppendLine();
+
+            if (changeSet.Changes.Count == 0)
+            {
+                sb.AppendLine("No changes detected for this cluster.");
+                return sb.ToString();
+            }
+            else
+            {
+                sb.AppendLine(":warning: **Warning**: It is strongly recommended to consult with Microsoft Support before making cluster configuration changes.");
+                sb.AppendLine();
+
+                foreach (var change in changeSet.Changes)
+                {
+                    if (!string.IsNullOrEmpty(change.Markdown))
+                    {
+                        sb.AppendLine(change.Markdown);
+                    }
+                    sb.AppendLine();
+                }
+            }
+
+            // Add scripts section
+            if (changeSet.Scripts.Count != 0)
+            {
+                sb.AppendLine("## Scripts to be executed:");
+                sb.AppendLine("```kql");
+                foreach (var script in changeSet.Scripts)
+                {
+                    sb.AppendLine(script.Text);
+                    sb.AppendLine();
+                }
+                sb.AppendLine("```");
+            }
+
+            return sb.ToString();
         }
     }
 }
