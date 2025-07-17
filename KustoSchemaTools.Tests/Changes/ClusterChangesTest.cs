@@ -219,7 +219,7 @@ namespace KustoSchemaTools.Tests.Changes
             Assert.NotNull(deletionChange);
             Assert.Equal("test-group", deletionChange.Entity);
             Assert.Equal("workload_group", deletionChange.EntityType);
-            Assert.Contains("Drop test-group", deletionChange.Markdown);
+            Assert.Contains("Drop Workload Group test-group", deletionChange.Markdown);
         }
 
         [Fact]
