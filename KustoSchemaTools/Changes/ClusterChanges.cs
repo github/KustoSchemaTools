@@ -69,7 +69,7 @@ namespace KustoSchemaTools.Changes
                     if (item != null)
                     {
                         var itemStr = item.ToString();
-                        items.Add(itemStr!);
+                        items.Add(itemStr);
                     }
                 }
                 
@@ -78,7 +78,7 @@ namespace KustoSchemaTools.Changes
                 return $"[{string.Join(", ", items)}]";
             }
             
-            return value.ToString()!;
+            return value.ToString();
         }
 
         /// <summary>
