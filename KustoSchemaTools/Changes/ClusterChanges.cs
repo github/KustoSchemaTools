@@ -82,6 +82,36 @@ namespace KustoSchemaTools.Changes
         }
 
         /// <summary>
+        /// Compares two property values for equality, handling collections and complex objects appropriately.
+        /// </summary>
+        /// <param name="oldValue">The old property value.</param>
+        /// <param name="newValue">The new property value.</param>
+        /// <returns>True if the values are equal, false otherwise.</returns>
+        private static bool ArePropertyValuesEqual(object? oldValue, object? newValue)
+        {
+            // Handle null cases
+            if (oldValue == null && newValue == null) return true;
+            if (oldValue == null || newValue == null) return false;
+            
+            // Handle collections specially
+            if (oldValue is System.Collections.IEnumerable oldEnumerable && 
+                newValue is System.Collections.IEnumerable newEnumerable && 
+                !(oldValue is string) && !(newValue is string))
+            {
+                var oldItems = oldEnumerable.Cast<object>().ToList();
+                var newItems = newEnumerable.Cast<object>().ToList();
+                
+                if (oldItems.Count != newItems.Count) return false;
+                
+                // Use SequenceEqual for proper comparison
+                return oldItems.SequenceEqual(newItems);
+            }
+            
+            // For non-collections, use standard equality
+            return object.Equals(oldValue, newValue);
+        }
+
+        /// <summary>
         /// Compares two policy objects of the same type using reflection to detect property-level changes.
         /// Only properties that are non-null in the new policy and differ from the old policy are considered changes.
         /// This approach aligns with Kusto's `.alter-merge` command behavior, which only modifies specified properties.
@@ -113,7 +143,7 @@ namespace KustoSchemaTools.Changes
                 var oldValue = oldPolicy != null ? prop.GetValue(oldPolicy) : null;
                 var newValue = prop.GetValue(newPolicy);
 
-                if (newValue != null && !object.Equals(oldValue, newValue))
+                if (newValue != null && !ArePropertyValuesEqual(oldValue, newValue))
                 {
                     var oldValueStr = FormatPropertyValue(oldValue);
                     var newValueStr = FormatPropertyValue(newValue);
