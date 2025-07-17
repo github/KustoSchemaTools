@@ -52,6 +52,36 @@ namespace KustoSchemaTools.Changes
         }
 
         /// <summary>
+        /// Formats a property value for display in markdown, handling collections and complex objects appropriately.
+        /// </summary>
+        /// <param name="value">The value to format.</param>
+        /// <returns>A formatted string representation of the value.</returns>
+        private static string FormatPropertyValue(object? value)
+        {
+            if (value == null) return "Not Set";
+            
+            // Handle collections specially
+            if (value is System.Collections.IEnumerable enumerable && !(value is string))
+            {
+                var items = new List<string>();
+                foreach (var item in enumerable)
+                {
+                    if (item != null)
+                    {
+                        var itemStr = item.ToString();
+                        items.Add(itemStr!);
+                    }
+                }
+                
+                if (items.Count == 0) return "[]";
+                if (items.Count == 1) return items[0];
+                return $"[{string.Join(", ", items)}]";
+            }
+            
+            return value.ToString()!;
+        }
+
+        /// <summary>
         /// Compares two policy objects of the same type using reflection to detect property-level changes.
         /// Only properties that are non-null in the new policy and differ from the old policy are considered changes.
         /// This approach aligns with Kusto's `.alter-merge` command behavior, which only modifies specified properties.
@@ -85,8 +115,8 @@ namespace KustoSchemaTools.Changes
 
                 if (newValue != null && !object.Equals(oldValue, newValue))
                 {
-                    var oldValueStr = oldValue?.ToString() ?? "Not Set";
-                    var newValueStr = newValue.ToString()!;
+                    var oldValueStr = FormatPropertyValue(oldValue);
+                    var newValueStr = FormatPropertyValue(newValue);
                     changedProperties.Add($"- **{prop.Name}**: `{oldValueStr}` → `{newValueStr}`");
                 }
             }
@@ -156,7 +186,7 @@ namespace KustoSchemaTools.Changes
 
                     // Replace the header in the deletion markdown
                     var originalMarkdown = deletionChange.Markdown;
-                    var modifiedMarkdown = originalMarkdown.Replace($"## {workloadGroupName}", $"#### :heavy_minus_sign: Drop {workloadGroupName}");
+                    var modifiedMarkdown = originalMarkdown.Replace($"## {workloadGroupName}", $"### Drop Workload Group {workloadGroupName}");
                     deletionChange.Markdown = modifiedMarkdown;
 
                     changeSet.Changes.Add(deletionChange);
