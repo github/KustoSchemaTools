@@ -70,8 +70,8 @@ namespace KustoSchemaTools.Parser.KustoWriter
             } while (keepGoing);
 
             // Final status
-            Console.WriteLine("---------------------------------------------------------------------------");
-            Console.WriteLine($"Database update complete: Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name} after {iterationCount} iterations.");
+            logger.LogInformation("---------------------------------------------------------------------------");
+            logger.LogInformation($"Database update complete: Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name} after {iterationCount} iterations.");
             foreach (var result in allResults)
             {
             logger.LogInformation($"Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name}");
@@ -79,7 +79,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
             {
                 logger.LogInformation($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
             }
-            Console.WriteLine("---------------------------------------------------------------------------");
+            logger.LogInformation("---------------------------------------------------------------------------");
 
             return allResults;
         }
@@ -99,19 +99,14 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 var followerResults = await ApplyChangesToDatabase(follower.Value.DatabaseName, followerChanges, followerClient, logger);
                 results.AddRange(followerResults);
 
-                Console.WriteLine();
-                Console.WriteLine($"Follower: {follower.Key}");
-                Console.WriteLine("---------------------------------------------------------------------------");
-                Console.WriteLine();
+                logger.LogInformation($"Follower: {follower.Key}");
+                logger.LogInformation("---------------------------------------------------------------------------");
 
                 foreach (var result in followerResults)
                 {
-                    Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
-                    Console.WriteLine("---------------------------------------------------------------------------");
+                    logger.LogInformation($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
+                    logger.LogInformation("---------------------------------------------------------------------------");
                 }
-
-                Console.WriteLine();
-                Console.WriteLine();
             }
 
             return results;
