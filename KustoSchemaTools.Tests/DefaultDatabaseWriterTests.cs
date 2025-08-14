@@ -118,7 +118,8 @@ namespace KustoSchemaTools.Tests
 
         static ScriptExecuteCommandResult CreateMockResult(IChange change, bool isSuccess)
         {
-            return new ScriptExecuteCommandResult {
+            return new ScriptExecuteCommandResult
+            {
                 OperationId = Guid.NewGuid(),
                 CommandType = "Script",
                 Result = isSuccess ? "Completed" : "Failed",
@@ -178,7 +179,8 @@ namespace KustoSchemaTools.Tests
             {
                 ApplyChangesToDatabaseCallCount++;
                 var results = new List<ScriptExecuteCommandResult>();
-                foreach (var c in changes) {
+                foreach (var c in changes)
+                {
                     var result = ResultsCache[c];
                     results.Add(result);
                 }

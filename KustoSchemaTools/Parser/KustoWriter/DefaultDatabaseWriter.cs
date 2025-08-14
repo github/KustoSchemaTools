@@ -31,10 +31,18 @@ namespace KustoSchemaTools.Parser.KustoWriter
             }
         }
 
+        /// <summary>
+        /// Iteratively generates and applies changes to the primary database until it stops making forward progress.
+        /// </summary>
+        /// <param name="sourceDb"></param>
+        /// <param name="targetDb"></param>
+        /// <param name="client"></param>
+        /// <param name="logger"></param>
+        /// <returns></returns>
         internal virtual async Task<List<ScriptExecuteCommandResult>> UpdatePrimary(Database sourceDb, Database targetDb, KustoClient client, ILogger logger)
         {
             // Some changes will be dependent upon each other, causing a race condition when attempting to apply them.
-            // As long as the write made some forward progress, keep looping until it stalls.
+            // As long as the write made some forward progress, keep looping until there are no more successes.
             logger.LogInformation($"Updating primary database {targetDb.Name}");
             var keepGoing = false;
             var iterationCount = 0;
@@ -56,17 +64,19 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 keepGoing = successes.Count < results.Count && successes.Count > 0;
                 if (!keepGoing)
                 {
-                    // add remaining results to the list.
+                    // if we're stopping, add remaining (failure) results to the list.
                     allResults.AddRange(results);
                 }
             } while (keepGoing);
 
             // Final status
-            Console.WriteLine($"Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name}");
+            Console.WriteLine("---------------------------------------------------------------------------");
+            Console.WriteLine($"Database update complete: Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name} after {iterationCount} iterations.");
             foreach (var result in allResults)
             {
                 Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
             }
+            Console.WriteLine("---------------------------------------------------------------------------");
 
             return allResults;
         }
@@ -161,7 +171,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
             return results;
         }
 
-        internal virtual async Task<ScriptExecuteCommandResult> ExecuteAsyncCommand(string databaseName, KustoClient client, ILogger logger, DatabaseScriptContainer sc)
+        private static async Task<ScriptExecuteCommandResult> ExecuteAsyncCommand(string databaseName, KustoClient client, ILogger logger, DatabaseScriptContainer sc)
         {
             var interval = TimeSpan.FromSeconds(5);
             var iterations = (int)(TimeSpan.FromHours(1) / interval);
@@ -193,11 +203,13 @@ namespace KustoSchemaTools.Parser.KustoWriter
             throw new Exception("Operation did not complete in a reasonable time");
         }
 
-        internal virtual async Task<List<ScriptExecuteCommandResult>> ExecutePendingSync(
+        /// <summary>
+        /// This function will build a single .execute script with(ContinueOnErrors = true) using all the scripts provided.
+        /// Execute script is defined here: https://learn.microsoft.com/en-us/kusto/management/execute-database-script?view=azure-data-explorer
+        /// </summary>
+        private static async Task<List<ScriptExecuteCommandResult>> ExecutePendingSync(
             string databaseName, KustoClient client, ILogger logger, List<DatabaseScriptContainer> scripts)
         {
-            // this function will build a single .execute script from all the small scripts provided.
-            // Execute script is defined here: https://learn.microsoft.com/en-us/kusto/management/execute-database-script?view=azure-data-explorer
             if (scripts.Count == 0)
             {
                 return [];
@@ -215,8 +227,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
             logger.LogDebug($"Script content:\n{script}");
 
             var result = await client.AdminClient.ExecuteControlCommandAsync(databaseName, script);
-            var resultsList = result.As<ScriptExecuteCommandResult>();
-            return resultsList;
+            return result.As<ScriptExecuteCommandResult>();
         }
     }
 }
