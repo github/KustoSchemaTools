@@ -34,7 +34,7 @@ namespace KustoSchemaTools.Tests
         }
 
         [Fact]
-        public async Task UpdatePrimary_NoRetryIfAllSucces()
+        public async Task UpdatePrimary_NoRetryIfAllSuccess()
         {
             // Arrange
             var sourceDb = new Database { Name = "SourceDb" };
