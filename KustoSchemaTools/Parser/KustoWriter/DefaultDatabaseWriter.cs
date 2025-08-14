@@ -74,7 +74,10 @@ namespace KustoSchemaTools.Parser.KustoWriter
             Console.WriteLine($"Database update complete: Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name} after {iterationCount} iterations.");
             foreach (var result in allResults)
             {
-                Console.WriteLine($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
+            logger.LogInformation($"Successfully applied {allResults.Count(r => r.Result != "Failed")} out of {allResults.Count} changes to {targetDb.Name}");
+            foreach (var result in allResults)
+            {
+                logger.LogInformation($"{result.CommandType} ({result.OperationId}): {result.Result} => {result.Reason} ({result.CommandText})");
             }
             Console.WriteLine("---------------------------------------------------------------------------");
 
