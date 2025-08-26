@@ -89,7 +89,7 @@ namespace KustoSchemaTools.Parser.KustoLoader
         public string? CachingPoliciesModificationKind { get; set; }
         public string? ChildEntities { get; set; }
         public string? OriginalDatabaseName { get; set; }
-        public Dictionary<string,TimeSpan> CachingPolicies { get; set; } = new Dictionary<string, TimeSpan>();
+        public Dictionary<string,TimeSpan>? CachingPolicies { get; set; }
 
     }
 }
