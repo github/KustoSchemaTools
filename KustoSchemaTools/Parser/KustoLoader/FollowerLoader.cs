@@ -28,7 +28,15 @@ namespace KustoSchemaTools.Parser.KustoLoader
         public static FollowerDatabase LoadFollower(string databaseName, KustoClient client)
         {
             var follower = new FollowerDatabase { DatabaseName = databaseName };
-            var metdaData = client.Client.ExecuteQuery(string.Format(FollowerMetadataQuery,databaseName)).As<FollowerMetadata>().First();
+            // Execute the query and handle the case where no rows are returned (e.g., database is not a follower)
+            var queryResult = client.Client.ExecuteQuery(string.Format(FollowerMetadataQuery, databaseName));
+            var metdaData = queryResult.As<FollowerMetadata>().FirstOrDefault();
+
+            if (metdaData == null)
+            {
+                // No follower metadata found; return a default follower object (no changes will be generated)
+                return follower;
+            }
 
             switch (metdaData.AuthorizedPrincipalsModificationKind)
             {
@@ -71,17 +79,17 @@ namespace KustoSchemaTools.Parser.KustoLoader
 
     public class FollowerMetadata
     {        
-        public string DatabaseName { get; set; }
-        public string LeaderClusterMetadataPath { get; set; }
-        public string CachingPolicyOverride { get; set; }
-        public string AuthorizedPrincipalsOverride { get; set; }
-        public string AuthorizedPrincipalsModificationKind { get; set; }
+        public string? DatabaseName { get; set; }
+        public string? LeaderClusterMetadataPath { get; set; }
+        public string? CachingPolicyOverride { get; set; }
+        public string? AuthorizedPrincipalsOverride { get; set; }
+        public string? AuthorizedPrincipalsModificationKind { get; set; }
         public bool IsAutoPrefetchEnabled { get; set; }
-        public string TableMetadataOverrides { get; set; }
-        public string CachingPoliciesModificationKind { get; set; }
-        public string ChildEntities { get; set; }
-        public string OriginalDatabaseName { get; set; }
-        public Dictionary<string,TimeSpan> CachingPolicies { get; set; }
+        public string? TableMetadataOverrides { get; set; }
+        public string? CachingPoliciesModificationKind { get; set; }
+        public string? ChildEntities { get; set; }
+        public string? OriginalDatabaseName { get; set; }
+        public Dictionary<string,TimeSpan> CachingPolicies { get; set; } = new Dictionary<string, TimeSpan>();
 
     }
 }
