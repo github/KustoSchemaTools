@@ -75,7 +75,7 @@ namespace KustoSchemaTools.Parser
             var ingestPrefix = ingest ? "ingest-" : string.Empty;
 
             // Fabric support
-            if (cluster.Contains(".fabric.microsoft.com", StringComparison.OrdinalIgnoreCase))
+            if (cluster.EndsWith(".fabric.microsoft.com", StringComparison.OrdinalIgnoreCase))
                 return $"https://{ingestPrefix}{cluster}";
 
             // Original mapping: shorthand → *.kusto.windows.net
