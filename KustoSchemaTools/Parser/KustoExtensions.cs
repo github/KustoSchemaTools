@@ -14,15 +14,15 @@ namespace KustoSchemaTools.Parser
             NullValueHandling = NullValueHandling.Ignore,
             Formatting = Formatting.Indented,
             ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
-            
+
 
         };
 
         public static string BracketIfIdentifier(this string name)
         {
-            return reservedKustoWords.Contains(name) 
-                ? $"['{name}']" 
-                : name.StartsWith("[") 
+            return reservedKustoWords.Contains(name)
+                ? $"['{name}']"
+                : name.StartsWith("[")
                     ? name
                     : KustoFacts.BracketNameIfNecessary(name);
         }
@@ -65,8 +65,21 @@ namespace KustoSchemaTools.Parser
 
         public static string ToKustoClusterUrl(this string cluster, bool ingest = false)
         {
-            var ingestPrefix = ingest ? "ingest-" : "";
-            return cluster.StartsWith("https") ? cluster : $"https://{ingestPrefix}{cluster}.kusto.windows.net";
+            if (string.IsNullOrWhiteSpace(cluster))
+                return cluster ?? string.Empty;
+
+            // Full URL passed → return as-is
+            if (cluster.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+                return cluster;
+
+            var ingestPrefix = ingest ? "ingest-" : string.Empty;
+
+            // Fabric support
+            if (cluster.Contains(".fabric.microsoft.com", StringComparison.OrdinalIgnoreCase))
+                return $"https://{ingestPrefix}{cluster}";
+
+            // Original mapping: shorthand → *.kusto.windows.net
+            return $"https://{ingestPrefix}{cluster}.kusto.windows.net";
         }
 
         public static bool IsFinal(this ScriptExecuteCommandResult command)
@@ -685,4 +698,3 @@ namespace KustoSchemaTools.Parser
 
     }
 }
-
