@@ -71,6 +71,77 @@ The `KustoClusterOrchestrator` coordinates between cluster handlers to manage cl
 
 Currently no plugins are supported. The orchestrator expects all cluster configuration in a central file.
 
+## Validation Features
+
+### Column Order Validation
+
+When modifying table schemas, the system can optionally validate that new columns are appended to the end of the column definition. This validation prevents update policy failures that occur when Kusto preserves column ordinal positions after ALTER TABLE operations.
+
+**⚠️ Note**: Column order validation is **disabled by default** to preserve existing behavior. Enable it explicitly when needed.
+
+**Validation Rules:**
+
+* New columns added at the end of existing columns: Pass
+* New table creation with any column order: Pass (no baseline to compare)
+* Existing columns positioned after new columns: Fail with detailed error
+* Reordering of existing columns: Fail
+
+**Error Handling:**
+
+Validation failures appear in the diff output as CAUTION-level comments with:
+- Description of the violation
+- Names of affected columns (new and misplaced)
+- Technical explanation of why this matters
+- Required remediation steps
+
+The validation failure will block deployment (FailsRollout=true).
+
+**Enabling Validation:**
+
+There are several ways to enable column order validation:
+
+1. **Environment Variable** (recommended for CI/CD):
+   ```bash
+   export KUSTO_ENABLE_COLUMN_VALIDATION=true
+   ```
+
+2. **Programmatically**:
+   ```csharp
+   // Enable validation via settings
+   var settings = ValidationSettings.WithColumnOrderValidation();
+   var changes = DatabaseChanges.GenerateChanges(oldDb, newDb, "MyDB", logger, settings);
+   
+   // Or from environment variables
+   var settings = ValidationSettings.FromEnvironment();
+   var changes = DatabaseChanges.GenerateChanges(oldDb, newDb, "MyDB", logger, settings);
+   ```
+
+3. **Default behavior** (validation disabled):
+   ```csharp
+   // This will NOT apply column order validation
+   var changes = DatabaseChanges.GenerateChanges(oldDb, newDb, "MyDB", logger);
+   ```
+
+**Example Scenarios:**
+
+Invalid configuration (existing column after new column):
+
+```yaml
+Columns:
+  ExistingColumn1: string
+  NewColumn: int          # New column inserted
+  ExistingColumn2: bool   # Existing column - causes validation failure
+```
+
+Valid configuration (new columns appended):
+
+```yaml
+Columns:
+  ExistingColumn1: string
+  ExistingColumn2: bool
+  NewColumn: int          # New column appended at end
+```
+
 ## Supported Features
 
 Currently following features are supported:
@@ -84,6 +155,7 @@ Currently following features are supported:
     * Default Hot Cache
 * Tables
     * Columns
+    * Column Order Validation
     * Retention
     * HotCache
     * Update Policies

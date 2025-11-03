@@ -1,4 +1,5 @@
 ﻿using KustoSchemaTools.Changes;
+using KustoSchemaTools.Configuration;
 using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
@@ -42,7 +43,8 @@ namespace KustoSchemaTools
 
                 var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
                 var kustoDb = await dbHandler.LoadAsync();
-                var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, databaseName, Log);
+                var validationSettings = ValidationSettings.FromEnvironment();
+                var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, databaseName, Log, validationSettings);
 
                 var comments = changes.Select(itm => itm.Comment).Where(itm => itm != null).ToList();
 
@@ -139,7 +141,23 @@ namespace KustoSchemaTools
                 try
                 {
                     Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
+                    
+                    // First, check validation before attempting to apply changes
                     var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
+                    var kustoDb = await dbHandler.LoadAsync();
+                    var validationSettings = ValidationSettings.FromEnvironment();
+                    var changes = DatabaseChanges.GenerateChanges(kustoDb, yamlDb, databaseName, Log, validationSettings);
+                    
+                    var comments = changes.Select(itm => itm.Comment).Where(itm => itm != null).ToList();
+                    var isValid = changes.All(itm => itm.Scripts.All(itm => itm.IsValid != false)) && comments.All(itm => itm.FailsRollout == false);
+                    
+                    if (!isValid)
+                    {
+                        var failedComments = comments.Where(itm => itm.FailsRollout).ToList();
+                        var failureReasons = string.Join("; ", failedComments.Select(c => c.Text));
+                        throw new InvalidOperationException($"Deployment blocked due to validation failures: {failureReasons}");
+                    }
+                    
                     await dbHandler.WriteAsync(yamlDb);
                     results.TryAdd(cluster.Url, null!);
                 }

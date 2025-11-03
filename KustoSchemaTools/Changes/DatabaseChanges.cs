@@ -1,7 +1,9 @@
 ﻿using Kusto.Cloud.Platform.Utils;
 using Kusto.Language;
+using KustoSchemaTools.Configuration;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Parser;
+using KustoSchemaTools.Validation;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Text;
@@ -10,7 +12,7 @@ namespace KustoSchemaTools.Changes
 {
     public class DatabaseChanges
     {
-        public static List<IChange> GenerateChanges(Database oldState, Database newState, string name, ILogger log)
+        public static List<IChange> GenerateChanges(Database oldState, Database newState, string name, ILogger log, ValidationSettings? validationSettings = null)
         {
 
             var result = new List<IChange>();
@@ -48,25 +50,25 @@ namespace KustoSchemaTools.Changes
 
             result.AddRange(GenerateDeletions(oldState, newState.Deletions, log));
 
-            result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log, (oldItem, newItem) => oldItem != null || newItem.Columns?.Any() == true));
+            result.AddRange(GenerateTableChangesWithValidation(oldState, newState, log, validationSettings));
             var mvChanges = GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log);
-            foreach(var mvChange in mvChanges)
-            {                                
-                var relevantChange = mvChange.Scripts.FirstOrDefault(itm => itm.Kind== "CreateMaterializedViewAsync");
-                if (relevantChange == null) 
+            foreach (var mvChange in mvChanges)
+            {
+                var relevantChange = mvChange.Scripts.FirstOrDefault(itm => itm.Kind == "CreateMaterializedViewAsync");
+                if (relevantChange == null)
                     continue;
 
 
                 var newMv = newState.MaterializedViews[mvChange.Entity];
 
-                var specificCache = (newMv.Kind== "table" ?
+                var specificCache = (newMv.Kind == "table" ?
                     (newState.Tables.ContainsKey(newMv.Source) ? newState.Tables[newMv.Source].Policies?.HotCache : null) :
                     (newState.MaterializedViews.ContainsKey(newMv.Source) ? newState.MaterializedViews[newMv.Source].Policies?.HotCache : null))
                     ?? newState.DefaultRetentionAndCache?.HotCache;
 
-                if(specificCache != null && specificCache.EndsWith("d") && int.TryParse(specificCache.TrimEnd("d"), out int lookBackInDays) && DateTime.TryParse(newMv.EffectiveDateTime, out var effectiveDateTime))
+                if (specificCache != null && specificCache.EndsWith("d") && int.TryParse(specificCache.TrimEnd("d"), out int lookBackInDays) && DateTime.TryParse(newMv.EffectiveDateTime, out var effectiveDateTime))
                 {
-                    if(DateTime.UtcNow.AddDays(-lookBackInDays) < effectiveDateTime)
+                    if (DateTime.UtcNow.AddDays(-lookBackInDays) < effectiveDateTime)
                     {
                         // Backfill will work
                         var validUntil = effectiveDateTime.AddDays(lookBackInDays);
@@ -75,7 +77,7 @@ namespace KustoSchemaTools.Changes
                     else
                     {
                         // Backfill will fail
-                        var validUntil = DateTime.UtcNow.Date.AddDays(1-lookBackInDays);
+                        var validUntil = DateTime.UtcNow.Date.AddDays(1 - lookBackInDays);
                         mvChange.Comment = new Comment { FailsRollout = true, Kind = CommentKind.Caution, Text = $"Not all data for the backfill of {mvChange.Entity} is available hot. The backfill will fail! Please set the effective Date of the MV to {validUntil:yyyy-MM-dd} or newer." };
                     }
                 }
@@ -83,7 +85,7 @@ namespace KustoSchemaTools.Changes
                 {
                     mvChange.Comment = new Comment { FailsRollout = false, Kind = CommentKind.Warning, Text = $"The conditions for backfilling {mvChange.Entity} couldn't be validated. Please check for errors!" };
                 }
-            }            
+            }
 
             result.AddRange(mvChanges);
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.ContinuousExports), log));
@@ -148,8 +150,8 @@ namespace KustoSchemaTools.Changes
             if (permissionChanges.Any())
             {
                 log.LogInformation($"Detected {permissionChanges.Count} permission changes");
-                permissionChanges.Insert(0,new Heading("Permissions"));
-                
+                permissionChanges.Insert(0, new Heading("Permissions"));
+
             }
 
             return permissionChanges;
@@ -174,7 +176,7 @@ namespace KustoSchemaTools.Changes
 
 
 
-        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState,Func<Database,Dictionary<string,T>> entitySelector,string entityName, ILogger log, Func<T?,T,bool>? validator = null) where T: IKustoBaseEntity
+        private static List<IChange> GenerateScriptCompareChanges<T>(Database oldState, Database newState, Func<Database, Dictionary<string, T>> entitySelector, string entityName, ILogger log, Func<T?, T, bool>? validator = null) where T : IKustoBaseEntity
         {
             var tmp = new List<IChange>();
             var existing = entitySelector(oldState) ?? new Dictionary<string, T>();
@@ -186,7 +188,7 @@ namespace KustoSchemaTools.Changes
             foreach (var item in newItems)
             {
                 var existingOldItem = existing.ContainsKey(item.Key) ? existing[item.Key] : default(T);
-                if(validator != null && !validator(existingOldItem, item.Value))
+                if (validator != null && !validator(existingOldItem, item.Value))
                 {
                     log.LogInformation($"Skipping {entityName} {item.Key} as it failed validation");
                     continue;
@@ -207,7 +209,7 @@ namespace KustoSchemaTools.Changes
 
             tmp = tmp.Where(itm => itm.Scripts?.Any() == true).ToList();
 
-            if(tmp.Count > 0)
+            if (tmp.Count > 0)
             {
                 tmp.Insert(0, new Heading(entityName));
             }
@@ -259,7 +261,7 @@ namespace KustoSchemaTools.Changes
                 }
             }
 
-            foreach(var script in result.SelectMany(itm => itm.Scripts))
+            foreach (var script in result.SelectMany(itm => itm.Scripts))
             {
                 var code = KustoCode.Parse(script.Text);
                 var diagnostics = code.GetDiagnostics();
@@ -270,7 +272,7 @@ namespace KustoSchemaTools.Changes
 
         }
 
-        private static List<IChange> GenerateFollowerCachingChanges(FollowerDatabase oldState, FollowerDatabase newState, Func<FollowerCache, Dictionary<string,string>> selector, string type, string kustoType)
+        private static List<IChange> GenerateFollowerCachingChanges(FollowerDatabase oldState, FollowerDatabase newState, Func<FollowerCache, Dictionary<string, string>> selector, string type, string kustoType)
         {
             var result = new List<IChange>();
             var oldEntities = selector(oldState.Cache);
@@ -331,6 +333,59 @@ namespace KustoSchemaTools.Changes
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Generates table changes with optional column order validation.
+        /// Attaches validation errors as comments when column order violations are detected and validation is enabled.
+        /// </summary>
+        private static List<IChange> GenerateTableChangesWithValidation(
+            Database oldState,
+            Database newState,
+            ILogger log,
+            ValidationSettings? validationSettings)
+        {
+            var changes = GenerateScriptCompareChanges(
+                oldState,
+                newState,
+                db => db.Tables,
+                nameof(newState.Tables),
+                log,
+                (oldItem, newItem) => oldItem != null || newItem.Columns?.Any() == true);
+
+            // Apply column order validation to table changes if enabled
+            if (validationSettings?.EnableColumnOrderValidation == true)
+            {
+                var validator = new ColumnOrderValidator();
+
+                foreach (var change in changes)
+                {
+                    if (change is ScriptCompareChange scriptChange)
+                    {
+                        var tableName = scriptChange.Entity;
+                        var oldTable = oldState?.Tables?.ContainsKey(tableName) == true
+                            ? oldState.Tables[tableName]
+                            : null;
+                        var newTable = newState.Tables[tableName];
+
+                        var validationResult = validator.ValidateColumnOrder(oldTable, newTable, tableName);
+
+                        if (!validationResult.IsValid && validationResult.Severity.HasValue && validationResult.ErrorMessage != null)
+                        {
+                            scriptChange.Comment = new Comment
+                            {
+                                FailsRollout = true,
+                                Kind = validationResult.Severity.Value,
+                                Text = validationResult.ErrorMessage
+                            };
+
+                            log.LogWarning($"Column order validation failed for table {tableName}");
+                        }
+                    }
+                }
+            }
+
+            return changes;
         }
     }
 

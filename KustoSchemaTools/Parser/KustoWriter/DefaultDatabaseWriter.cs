@@ -13,6 +13,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
         public async Task WriteAsync(Database sourceDb, Database targetDb, KustoClient client, ILogger logger)
         {
             var changes = DatabaseChanges.GenerateChanges(targetDb, sourceDb, targetDb.Name, logger);
+            
             var results = await ApplyChangesToDatabase(targetDb.Name, changes, client, logger);
 
             foreach (var result in results)

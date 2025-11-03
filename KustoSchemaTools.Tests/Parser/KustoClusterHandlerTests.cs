@@ -17,7 +17,7 @@ namespace KustoSchemaTools.Tests.Parser
         {
             _loggerMock = new Mock<ILogger<KustoClusterHandler>>();
             _adminClientMock = new Mock<ICslAdminProvider>();
-            
+
             _handler = new KustoClusterHandler(
                 _adminClientMock.Object,
                 _loggerMock.Object,
@@ -31,14 +31,14 @@ namespace KustoSchemaTools.Tests.Parser
         {
             // Arrange
             var changeSet = new ClusterChangeSet("test-cluster", new Cluster(), new Cluster());
-            
+
             // Act
             var result = await _handler.WriteAsync(changeSet);
-            
+
             // Assert
             Assert.NotNull(result);
             Assert.Empty(result);
-            
+
             // Verify no commands were executed
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 It.IsAny<string>(),
@@ -66,7 +66,7 @@ namespace KustoSchemaTools.Tests.Parser
 
             // Assert
             Assert.NotNull(result);
-            
+
             // Verify only valid scripts were included in the execution
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
@@ -94,7 +94,7 @@ namespace KustoSchemaTools.Tests.Parser
 
             // Assert
             Assert.NotNull(result);
-            
+
             // Verify negative order scripts were excluded
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
@@ -123,13 +123,13 @@ namespace KustoSchemaTools.Tests.Parser
 
             // Assert
             Assert.NotNull(result);
-            
+
             // Verify scripts were executed in order (script0, script1, script2)
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
-                It.Is<string>(cmd => 
-                    cmd.Contains("script0") && 
-                    cmd.Contains("script1") && 
+                It.Is<string>(cmd =>
+                    cmd.Contains("script0") &&
+                    cmd.Contains("script1") &&
                     cmd.Contains("script2") &&
                     cmd.IndexOf("script0") < cmd.IndexOf("script1") &&
                     cmd.IndexOf("script1") < cmd.IndexOf("script2")),
@@ -156,11 +156,11 @@ namespace KustoSchemaTools.Tests.Parser
 
             // Assert
             Assert.NotNull(result);
-            
+
             // Verify the correct cluster script format was generated
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
-                It.Is<string>(cmd => 
+                It.Is<string>(cmd =>
                     cmd.StartsWith(".execute cluster script with(ContinueOnErrors = true) <|") &&
                     cmd.Contains(".alter cluster policy capacity") &&
                     cmd.Contains(".show cluster policy capacity")),
@@ -190,11 +190,11 @@ namespace KustoSchemaTools.Tests.Parser
 
             // Assert
             Assert.NotNull(result);
-            
+
             // Verify only script3 and script5 were included
             _adminClientMock.Verify(x => x.ExecuteControlCommandAsync(
                 "",
-                It.Is<string>(cmd => 
+                It.Is<string>(cmd =>
                     cmd.Contains("script3") &&
                     cmd.Contains("script5") &&
                     !cmd.Contains("script1") &&
@@ -260,7 +260,7 @@ namespace KustoSchemaTools.Tests.Parser
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockCapacityReader.Object);
-            
+
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockWorkloadGroupsReader.Object);
@@ -273,7 +273,7 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.Equal("test-cluster", result.Name);
             Assert.Equal("test.eastus", result.Url);
             Assert.NotNull(result.CapacityPolicy);
-            
+
             Assert.NotNull(result.CapacityPolicy.IngestionCapacity);
             Assert.Equal(500, result.CapacityPolicy.IngestionCapacity.ClusterMaximumConcurrentOperations);
             Assert.Equal(0.75, result.CapacityPolicy.IngestionCapacity.CoreUtilizationCoefficient);
@@ -309,7 +309,7 @@ namespace KustoSchemaTools.Tests.Parser
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockCapacityReader.Object);
-            
+
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockWorkloadGroupsReader.Object);
@@ -350,7 +350,7 @@ namespace KustoSchemaTools.Tests.Parser
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockCapacityReader.Object);
-            
+
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockWorkloadGroupsReader.Object);
@@ -383,7 +383,7 @@ namespace KustoSchemaTools.Tests.Parser
             mockCapacityReader.SetupSequence(x => x.Read())
                 .Returns(true)   // First call returns true (data available)
                 .Returns(false); // Second call returns false (no more data)
-            mockCapacityReader.Setup(x => x["Policy"]).Returns(null); // Null policy
+            mockCapacityReader.Setup(x => x["Policy"]).Returns(null!); // Null policy
 
             var mockWorkloadGroupsReader = new Mock<IDataReader>();
             mockWorkloadGroupsReader.Setup(x => x.Read()).Returns(false); // No workload groups
@@ -391,7 +391,7 @@ namespace KustoSchemaTools.Tests.Parser
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockCapacityReader.Object);
-            
+
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockWorkloadGroupsReader.Object);
@@ -473,7 +473,7 @@ namespace KustoSchemaTools.Tests.Parser
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show cluster policy capacity", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockCapacityReader.Object);
-            
+
             _adminClientMock
                 .Setup(x => x.ExecuteControlCommandAsync("", ".show workload_groups", It.IsAny<ClientRequestProperties>()))
                 .ReturnsAsync(mockWorkloadGroupsReader.Object);
@@ -486,11 +486,11 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.Equal("test-cluster", result.Name);
             Assert.Equal("test.eastus", result.Url);
             Assert.Null(result.CapacityPolicy);
-            
+
             // Verify workload groups were loaded
             Assert.NotNull(result.WorkloadGroups);
             Assert.Equal(2, result.WorkloadGroups.Count);
-            
+
             var defaultGroup = result.WorkloadGroups.FirstOrDefault(wg => wg.WorkloadGroupName == "default");
             Assert.NotNull(defaultGroup);
             Assert.NotNull(defaultGroup.WorkloadGroupPolicy);
@@ -522,20 +522,20 @@ namespace KustoSchemaTools.Tests.Parser
         private ClusterChangeSet CreateChangeSetWithScripts(DatabaseScriptContainer[] scripts)
         {
             var changeSet = new ClusterChangeSet("test-cluster", new Cluster(), new Cluster());
-            
+
             // Create a mock change that contains the scripts
             var mockChange = new Mock<IChange>();
             mockChange.Setup(x => x.Scripts).Returns(scripts.ToList());
-            
+
             changeSet.Changes.Add(mockChange.Object);
-            
+
             return changeSet;
         }
 
         private Mock<IDataReader> CreateMockDataReader()
         {
             var mockReader = new Mock<IDataReader>();
-            
+
             // Make Read() return false to simulate no data
             mockReader.Setup(x => x.Read()).Returns(false);
 
