@@ -45,7 +45,8 @@ namespace KustoSchemaTools.Changes
 
             if (removed.Any())
             {
-                var script = new DatabaseScript { Text = BuildDrop(removed), Order = -1 };
+                // Execute drops before adds; keep non-negative so they aren't filtered out.
+                var script = new DatabaseScript { Text = BuildDrop(removed), Order = 0 };
                 var container = new DatabaseScriptContainer(script, "FollowerPermissionChange");
                 container.IsValid = !KustoCode.Parse(script.Text).GetDiagnostics().Any();
                 Scripts.Add(container);
@@ -53,7 +54,7 @@ namespace KustoSchemaTools.Changes
 
             if (added.Any())
             {
-                var script = new DatabaseScript { Text = BuildAdd(added), Order = 0 };
+                var script = new DatabaseScript { Text = BuildAdd(added), Order = removed.Any() ? 1 : 0 };
                 var container = new DatabaseScriptContainer(script, "FollowerPermissionChange");
                 container.IsValid = !KustoCode.Parse(script.Text).GetDiagnostics().Any();
                 Scripts.Add(container);
