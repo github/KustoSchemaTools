@@ -48,6 +48,8 @@ namespace KustoSchemaTools.Parser.KustoLoader
                 return follower;
             }
 
+            follower.IsFollower = true;
+
             switch (metdaData.AuthorizedPrincipalsModificationKind)
             {
                 case "Union":
