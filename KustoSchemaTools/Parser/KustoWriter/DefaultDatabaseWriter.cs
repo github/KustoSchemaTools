@@ -13,10 +13,8 @@ namespace KustoSchemaTools.Parser.KustoWriter
         public async Task WriteAsync(Database sourceDb, Database targetDb, KustoClient client, ILogger logger)
         {
             var followerMeta = FollowerLoader.LoadFollower(targetDb.Name, client);
-            var isFollower = followerMeta.Permissions.ModificationKind != FollowerModificationKind.None
-                             || followerMeta.Cache.ModificationKind != FollowerModificationKind.None
-                             || followerMeta.Cache.Tables.Any()
-                             || followerMeta.Cache.MaterializedViews.Any();
+            // Treat as follower if metadata came back (DatabaseName populated); followers may have no overrides yet.
+            var isFollower = !string.IsNullOrWhiteSpace(followerMeta.DatabaseName);
 
             List<IChange> changes;
             if (isFollower)
