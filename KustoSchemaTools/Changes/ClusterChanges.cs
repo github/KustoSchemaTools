@@ -44,6 +44,14 @@ namespace KustoSchemaTools.Changes
                 var code = KustoCode.Parse(script.Script.Text);
                 var diagnostics = code.GetDiagnostics();
                 script.IsValid = !diagnostics.Any();
+                script.Diagnostics = diagnostics.Any()
+                    ? diagnostics.Select(diagnostic => new ScriptDiagnostic
+                    {
+                        Start = diagnostic.Start,
+                        End = diagnostic.End,
+                        Description = diagnostic.Description
+                    }).ToList()
+                    : null;
             }
 
             changeSet.Markdown = GenerateClusterMarkdown(changeSet);

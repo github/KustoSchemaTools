@@ -13,10 +13,7 @@ namespace KustoSchemaTools.Changes
     {
         public static StructuredChange ToStructuredChange(this IChange change)
         {
-            if (change == null)
-            {
-                throw new ArgumentNullException(nameof(change));
-            }
+            ArgumentNullException.ThrowIfNull(change);
 
             var structuredChange = new StructuredChange
             {
@@ -61,11 +58,7 @@ namespace KustoSchemaTools.Changes
 
             if (change.From != null)
             {
-                var previousScripts = change.From
-                    .CreateScripts(change.Entity, false)
-                    .GroupBy(script => script.Kind)
-                    .Select(group => group.First())
-                    .ToDictionary(script => script.Kind, script => script);
+                var previousScripts = BuildPreviousScripts(change.From, change.Entity);
 
                 foreach (var script in comparison.NewScripts)
                 {
@@ -117,7 +110,7 @@ namespace KustoSchemaTools.Changes
             var payload = new Dictionary<string, object?>();
             foreach (var script in newScripts)
             {
-                var oldScript = previousScripts.ContainsKey(script.Kind) ? previousScripts[script.Kind] : null;
+                previousScripts.TryGetValue(script.Kind, out var oldScript);
                 var diffPreview = BuildDiffPreview(oldScript, script);
                 if (diffPreview.Count > 0)
                 {
@@ -169,12 +162,7 @@ namespace KustoSchemaTools.Changes
 
         private static string? BuildDiffMarkdown(ScriptCompareChange change)
         {
-            var previousScripts = change.From?
-                .CreateScripts(change.Entity, false)
-                .GroupBy(script => script.Kind)
-                .Select(group => group.First())
-                .ToDictionary(script => script.Kind, script => script)
-                ?? new Dictionary<string, DatabaseScriptContainer>();
+            var previousScripts = BuildPreviousScripts(change.From, change.Entity);
 
             var sb = new StringBuilder();
             var differ = new Differ();
@@ -220,6 +208,20 @@ namespace KustoSchemaTools.Changes
 
             var diffContent = sb.ToString().Trim();
             return string.IsNullOrEmpty(diffContent) ? null : diffContent;
+        }
+
+        private static Dictionary<string, DatabaseScriptContainer> BuildPreviousScripts(IKustoBaseEntity? entity, string changeEntity)
+        {
+            if (entity == null)
+            {
+                return new Dictionary<string, DatabaseScriptContainer>();
+            }
+
+            return entity
+                .CreateScripts(changeEntity, false)
+                .GroupBy(script => script.Kind)
+                .Select(group => group.First())
+                .ToDictionary(script => script.Kind, script => script);
         }
     }
 }

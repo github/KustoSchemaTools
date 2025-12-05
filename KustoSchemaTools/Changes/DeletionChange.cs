@@ -1,5 +1,7 @@
-﻿using KustoSchemaTools.Parser;
+﻿using KustoSchemaTools.Model;
+using KustoSchemaTools.Parser;
 using System.Text;
+using System.Linq;
 using Kusto.Language;
 
 
@@ -24,7 +26,15 @@ namespace KustoSchemaTools.Changes
                 var sc = new DatabaseScriptContainer("Deletion", 0, $".drop {EntityType} {Entity}");
                 var code = KustoCode.Parse(sc.Script.Text);
                 var diagnostics = code.GetDiagnostics();
-                sc.IsValid = diagnostics.Any() == false;
+                sc.IsValid = !diagnostics.Any();
+                sc.Diagnostics = diagnostics.Any()
+                    ? diagnostics.Select(diagnostic => new ScriptDiagnostic
+                    {
+                        Start = diagnostic.Start,
+                        End = diagnostic.End,
+                        Description = diagnostic.Description
+                    }).ToList()
+                    : null;
                 return new List<DatabaseScriptContainer> { sc };
             }
         }

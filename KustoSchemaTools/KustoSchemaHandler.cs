@@ -66,13 +66,13 @@ namespace KustoSchemaTools
 
         public async Task Import(string path, string databaseName, bool includeColumns)
         {
-            var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
+            var clustersFile = File.ReadAllText(Path.Join(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
             var dbHandler = KustoDatabaseHandlerFactory.Create(clusters.Connections[0].Url, databaseName);
 
             var db = await dbHandler.LoadAsync();
-            if (includeColumns == false)
+            if (!includeColumns)
             {
                 foreach(var table in db.Tables.Values)
                 {
@@ -87,7 +87,7 @@ namespace KustoSchemaTools
 
         public async Task<ConcurrentDictionary<string,Exception>> Apply(string path, string databaseName)
         {
-            var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
+            var clustersFile = File.ReadAllText(Path.Join(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
@@ -99,7 +99,7 @@ namespace KustoSchemaTools
             {
                 try
                 {
-                    Log.LogInformation($"Generating and applying script for {Path.Combine(path, databaseName)} => {cluster}/{databaseName}");
+                    Log.LogInformation($"Generating and applying script for {Path.Join(path, databaseName)} => {cluster}/{databaseName}");
                     var dbHandler = KustoDatabaseHandlerFactory.Create(cluster.Url, databaseName);
                     await dbHandler.WriteAsync(yamlDb);
                     results.TryAdd(cluster.Url, null!);
@@ -115,7 +115,7 @@ namespace KustoSchemaTools
 
         private async Task<DiffComputationResult> BuildDiffComputationResult(string path, string databaseName)
         {
-            var clustersFile = File.ReadAllText(Path.Combine(path, "clusters.yml"));
+            var clustersFile = File.ReadAllText(Path.Join(path, "clusters.yml"));
             var clusters = Serialization.YamlPascalCaseDeserializer.Deserialize<Clusters>(clustersFile);
 
             var yamlHandler = YamlDatabaseHandlerFactory.Create(path, databaseName);
@@ -151,11 +151,11 @@ namespace KustoSchemaTools
             {
                 if (logDetails)
                 {
-                    Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {clusterDiff.Cluster.Name}/{databaseName}");
+                    Log.LogInformation($"Generating diff markdown for {Path.Join(path, databaseName)} => {clusterDiff.Cluster.Name}/{databaseName}");
                 }
 
                 var changes = clusterDiff.Changes;
-                var comments = changes.Select(change => change.Comment).Where(comment => comment != null).ToList();
+                var comments = changes.Select(change => change.Comment).OfType<Comment>().ToList();
                 var clusterValid = IsDiffValid(changes);
                 isValid &= clusterValid;
 
@@ -183,7 +183,7 @@ namespace KustoSchemaTools
                 if (logDetails)
                 {
                     var scriptSb = new StringBuilder();
-                    foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Script.Order))
+                    foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid is true).OrderBy(itm => itm.Script.Order))
                     {
                         scriptSb.AppendLine(script.Script.Text);
                     }
@@ -196,7 +196,7 @@ namespace KustoSchemaTools
             {
                 if (logDetails)
                 {
-                    Log.LogInformation($"Generating diff markdown for {Path.Combine(path, databaseName)} => {followerDiff.ConnectionKey}/{followerDiff.DatabaseName}");
+                    Log.LogInformation($"Generating diff markdown for {Path.Join(path, databaseName)} => {followerDiff.ConnectionKey}/{followerDiff.DatabaseName}");
                 }
 
                 sb.AppendLine($"# Changes for follower database {followerDiff.ConnectionKey}/{followerDiff.DatabaseName}");
@@ -219,13 +219,12 @@ namespace KustoSchemaTools
             var structuredChanges = changes.Select(change => change.ToStructuredChange()).ToList();
             var comments = changes
                 .Select(change => StructuredComment.From(change.Comment))
-                .Where(comment => comment != null)
-                .Cast<StructuredComment>()
+                .OfType<StructuredComment>()
                 .ToList();
 
             var validScripts = changes
                 .SelectMany(change => change.Scripts)
-                .Where(script => script.IsValid == true)
+                .Where(script => script.IsValid is true)
                 .OrderBy(script => script.Script.Order)
                 .ToList();
 
@@ -244,11 +243,11 @@ namespace KustoSchemaTools
         private static bool IsDiffValid(IEnumerable<IChange> changes)
         {
             var changeList = changes?.ToList() ?? new List<IChange>();
-            var scriptsHealthy = changeList.All(change => change.Scripts.All(script => script.IsValid != false));
+            var scriptsHealthy = changeList.All(change => change.Scripts.All(script => script.IsValid is not false));
             var commentsHealthy = changeList
                 .Select(change => change.Comment)
-                .Where(comment => comment != null)
-                .All(comment => comment.FailsRollout == false);
+                .OfType<Comment>()
+                .All(comment => comment.FailsRollout is false);
 
             return scriptsHealthy && commentsHealthy;
         }

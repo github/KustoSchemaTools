@@ -24,7 +24,7 @@ namespace KustoSchemaTools.Changes
             var to = To.CreateScripts(Entity, From == null);
             Markdown = string.Empty;
 
-            if (to.Any() == false) return;
+            if (!to.Any()) return;
 
             StringBuilder sb = new StringBuilder($"## {Entity}");
             sb.AppendLine();
@@ -44,7 +44,7 @@ namespace KustoSchemaTools.Changes
 
                 var zipped = reducedBefore.GetLexicalTokens().Zip(reducedAfter.GetLexicalTokens()).ToList();
                 var diffs = zipped.Where(itm => itm.First.Text != itm.Second.Text).ToList();
-                if(diffs.Any() == false) continue;
+                if (!diffs.Any()) continue;
 
                 if (singleLinebeforeText.Equals(singleLineafterText)) continue;
 
@@ -56,7 +56,7 @@ namespace KustoSchemaTools.Changes
 
                 var diagnostics = code.GetDiagnostics();
                 var hasDiagnostics = diagnostics.Any();
-                change.IsValid = hasDiagnostics == false || change.Script.Order == -1;
+                change.IsValid = !hasDiagnostics || change.Script.Order == -1;
                 change.Diagnostics = hasDiagnostics
                     ? diagnostics.Select(diagnostic => new ScriptDiagnostic
                     {
@@ -115,7 +115,7 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Script.Text.PrettifyKql()}</pre></td>");
                 sb.AppendLine("</tr>");
 
-                if (change.IsValid == false)
+                if (change.IsValid is false)
                 {
                     foreach (var diagnostic in diagnostics)
                     {
