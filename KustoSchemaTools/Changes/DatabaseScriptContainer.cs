@@ -1,4 +1,5 @@
 ﻿using KustoSchemaTools.Model;
+using Newtonsoft.Json;
 
 namespace KustoSchemaTools.Changes
 {
@@ -23,11 +24,22 @@ namespace KustoSchemaTools.Changes
             IsAsync = isAsync;
         }
 
+        [JsonProperty("script")]
         public DatabaseScript Script { get; set; }
-        public string Kind{ get; set; }
+
+        [JsonProperty("kind")]
+        public string Kind { get; set; }
+
+        [JsonProperty("isValid")]
         public bool? IsValid { get; set; }
+
+        [JsonProperty("text")]
         public string Text => Script.Text;
+
+        [JsonProperty("order")]
         public int Order => Script.Order;
-        public bool IsAsync { get;set; }
+
+        [JsonProperty("isAsync")]
+        public bool IsAsync { get; set; }
     }
 }
