@@ -22,7 +22,7 @@ namespace KustoSchemaTools.Changes
             get
             {
                 var sc = new DatabaseScriptContainer("Deletion", 0, $".drop {EntityType} {Entity}");
-                var code = KustoCode.Parse(sc.Text);
+                var code = KustoCode.Parse(sc.Script.Text);
                 var diagnostics = code.GetDiagnostics();
                 sc.IsValid = diagnostics.Any() == false;
                 return new List<DatabaseScriptContainer> { sc };

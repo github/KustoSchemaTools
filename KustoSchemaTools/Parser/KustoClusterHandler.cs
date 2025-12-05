@@ -71,9 +71,9 @@ namespace KustoSchemaTools
         {
             var scripts = changeSet.Changes
                 .SelectMany(itm => itm.Scripts)
-                .Where(itm => itm.Order >= 0)
+                .Where(itm => itm.Script.Order >= 0)
                 .Where(itm => itm.IsValid == true)
-                .OrderBy(itm => itm.Order)
+                .OrderBy(itm => itm.Script.Order)
                 .ToList();
 
             var result = await ExecuteClusterScriptAsync(scripts);
@@ -88,7 +88,7 @@ namespace KustoSchemaTools
                 return new List<ScriptExecuteCommandResult>();
             }
 
-            var scriptTexts = scripts.Select(script => script.Text);
+            var scriptTexts = scripts.Select(script => script.Script.Text);
             var script = ".execute cluster script with(ContinueOnErrors = true) <|" + Environment.NewLine + 
                         string.Join(Environment.NewLine, scriptTexts);
 

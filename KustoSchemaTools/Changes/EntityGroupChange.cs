@@ -34,7 +34,7 @@ namespace KustoSchemaTools.Changes
             }
 
             Scripts.Add(toScript);
-            var code = KustoCode.Parse(toScript.Text);
+            var code = KustoCode.Parse(toScript.Script.Text);
             var diagnostics = code.GetDiagnostics();
             toScript.IsValid = diagnostics.Any() == false;
             var logo = toScript.IsValid.Value ? ":green_circle:" : ":red_circle:";

@@ -183,9 +183,9 @@ namespace KustoSchemaTools
                 if (logDetails)
                 {
                     var scriptSb = new StringBuilder();
-                    foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Order))
+                    foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid == true).OrderBy(itm => itm.Script.Order))
                     {
-                        scriptSb.AppendLine(script.Text);
+                        scriptSb.AppendLine(script.Script.Text);
                     }
 
                     Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
@@ -226,7 +226,7 @@ namespace KustoSchemaTools
             var validScripts = changes
                 .SelectMany(change => change.Scripts)
                 .Where(script => script.IsValid == true)
-                .OrderBy(script => script.Order)
+                .OrderBy(script => script.Script.Order)
                 .ToList();
 
             return new StructuredDiff

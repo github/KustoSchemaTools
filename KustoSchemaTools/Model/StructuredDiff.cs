@@ -65,6 +65,9 @@ namespace KustoSchemaTools.Model
 
         [JsonProperty("headingText", NullValueHandling = NullValueHandling.Ignore)]
         public string? HeadingText { get; set; }
+
+        [JsonProperty("diffMarkdown", NullValueHandling = NullValueHandling.Ignore)]
+        public string? DiffMarkdown { get; set; }
     }
 
     public class StructuredScriptComparison
