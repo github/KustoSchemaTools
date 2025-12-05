@@ -41,9 +41,17 @@ namespace KustoSchemaTools.Changes
             // Run Kusto code diagnostics
             foreach (var script in changeSet.Scripts)
             {
-                var code = KustoCode.Parse(script.Text);
+                var code = KustoCode.Parse(script.Script.Text);
                 var diagnostics = code.GetDiagnostics();
                 script.IsValid = !diagnostics.Any();
+                script.Diagnostics = diagnostics.Any()
+                    ? diagnostics.Select(diagnostic => new ScriptDiagnostic
+                    {
+                        Start = diagnostic.Start,
+                        End = diagnostic.End,
+                        Description = diagnostic.Description
+                    }).ToList()
+                    : null;
             }
 
             changeSet.Markdown = GenerateClusterMarkdown(changeSet);
@@ -244,7 +252,7 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine("```kql");
                 foreach (var script in changeSet.Scripts)
                 {
-                    sb.AppendLine(script.Text);
+                    sb.AppendLine(script.Script.Text);
                     sb.AppendLine();
                 }
                 sb.AppendLine("```");

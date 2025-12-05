@@ -1,4 +1,6 @@
-﻿namespace KustoSchemaTools.Model
+﻿using Newtonsoft.Json;
+
+namespace KustoSchemaTools.Model
 {
     public class DatabaseScript
     {
@@ -12,7 +14,10 @@
         {
         }
 
+        [JsonProperty("text")]
         public string Text { get; set; }
+
+        [JsonProperty("order")]
         public int Order { get; set; }
     }
 

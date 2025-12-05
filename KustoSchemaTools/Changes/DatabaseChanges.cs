@@ -261,9 +261,17 @@ namespace KustoSchemaTools.Changes
 
             foreach(var script in result.SelectMany(itm => itm.Scripts))
             {
-                var code = KustoCode.Parse(script.Text);
+                var code = KustoCode.Parse(script.Script.Text);
                 var diagnostics = code.GetDiagnostics();
-                script.IsValid = diagnostics.Any() == false;
+                script.IsValid = !diagnostics.Any();
+                script.Diagnostics = diagnostics.Any()
+                    ? diagnostics.Select(diagnostic => new ScriptDiagnostic
+                    {
+                        Start = diagnostic.Start,
+                        End = diagnostic.End,
+                        Description = diagnostic.Description
+                    }).ToList()
+                    : null;
             }
 
             return result;

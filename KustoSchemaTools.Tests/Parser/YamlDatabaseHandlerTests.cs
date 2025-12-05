@@ -21,7 +21,7 @@ namespace KustoSchemaTools.Tests.Parser
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin())
                 .WithPlugin(new DatabaseCleanup());
-            var loader = factory.Create(Path.Combine(BasePath, Deployment), Database);
+            var loader = factory.Create(Path.Join(BasePath, Deployment), Database);
 
             var db = await loader.LoadAsync();
 
@@ -51,7 +51,7 @@ namespace KustoSchemaTools.Tests.Parser
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin());
             // DatabaseCleanup intentionally omitted
-            var loaderWithoutCleanup = factoryWithoutCleanup.Create(Path.Combine(BasePath, Deployment), Database);
+            var loaderWithoutCleanup = factoryWithoutCleanup.Create(Path.Join(BasePath, Deployment), Database);
             var dbWithoutCleanup = await loaderWithoutCleanup.LoadAsync();
 
             // with the DatabaseCleanup plugin
@@ -60,7 +60,7 @@ namespace KustoSchemaTools.Tests.Parser
                 .WithPlugin(new FunctionPlugin())
                 .WithPlugin(new MaterializedViewsPlugin())
                 .WithPlugin(new DatabaseCleanup());
-            var loaderWithCleanup = factoryWithCleanup.Create(Path.Combine(BasePath, Deployment), Database);
+            var loaderWithCleanup = factoryWithCleanup.Create(Path.Join(BasePath, Deployment), Database);
             var dbWithCleanup = await loaderWithCleanup.LoadAsync();
 
             // Assert
@@ -113,7 +113,7 @@ namespace KustoSchemaTools.Tests.Parser
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new MaterializedViewsPlugin());
             // DatabaseCleanup intentionally omitted
-            var loaderWithoutCleanup = factoryWithoutCleanup.Create(Path.Combine(BasePath, Deployment), Database);
+            var loaderWithoutCleanup = factoryWithoutCleanup.Create(Path.Join(BasePath, Deployment), Database);
             var dbWithoutCleanup = await loaderWithoutCleanup.LoadAsync();
 
             // with the DatabaseCleanup plugin
@@ -121,7 +121,7 @@ namespace KustoSchemaTools.Tests.Parser
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new MaterializedViewsPlugin())
                 .WithPlugin(new DatabaseCleanup());
-            var loaderWithCleanup = factoryWithCleanup.Create(Path.Combine(BasePath, Deployment), Database);
+            var loaderWithCleanup = factoryWithCleanup.Create(Path.Join(BasePath, Deployment), Database);
             var dbWithCleanup = await loaderWithCleanup.LoadAsync();
 
             // Assert
@@ -158,7 +158,7 @@ namespace KustoSchemaTools.Tests.Parser
                 .WithPlugin(new TablePlugin())
                 .WithPlugin(new FunctionPlugin())
                 .WithPlugin(new DatabaseCleanup());
-            var loader = factory.Create(Path.Combine(BasePath, Deployment), Database);
+            var loader = factory.Create(Path.Join(BasePath, Deployment), Database);
 
             // Act - Load the database
             var db = await loader.LoadAsync();

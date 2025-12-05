@@ -28,15 +28,23 @@ namespace KustoSchemaTools.Changes
             var toEntityArr = string.Join(",", toEntityStrings);
             var toScript = new DatabaseScriptContainer("EntityGroup", 3, $".create-or-alter entity_group {Entity} ({toEntityArr})");
 
-            if (added.Any() == false && removed.Any() == false)
+            if (!added.Any() && !removed.Any())
             {
                 return;
             }
 
             Scripts.Add(toScript);
-            var code = KustoCode.Parse(toScript.Text);
+            var code = KustoCode.Parse(toScript.Script.Text);
             var diagnostics = code.GetDiagnostics();
-            toScript.IsValid = diagnostics.Any() == false;
+            toScript.IsValid = !diagnostics.Any();
+            toScript.Diagnostics = diagnostics.Any()
+                ? diagnostics.Select(diagnostic => new ScriptDiagnostic
+                {
+                    Start = diagnostic.Start,
+                    End = diagnostic.End,
+                    Description = diagnostic.Description
+                }).ToList()
+                : null;
             var logo = toScript.IsValid.Value ? ":green_circle:" : ":red_circle:";
 
 

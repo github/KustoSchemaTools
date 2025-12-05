@@ -62,9 +62,9 @@ namespace KustoSchemaTools.Parser.KustoWriter
         {
             var scripts = changes
                 .SelectMany(itm => itm.Scripts)
-                .Where(itm => itm.Order >= 0)
+                .Where(itm => itm.Script.Order >= 0)
                 .Where(itm => itm.IsValid == true)
-                .OrderBy(itm => itm.Order)
+                .OrderBy(itm => itm.Script.Order)
                 .ToList();
 
             var results = new List<ScriptExecuteCommandResult>();
@@ -94,7 +94,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
         {
             var interval = TimeSpan.FromSeconds(5);
             var iterations = (int)(TimeSpan.FromHours(1) / interval);
-            var result = await client.AdminClient.ExecuteControlCommandAsync(databaseName, sc.Text);
+            var result = await client.AdminClient.ExecuteControlCommandAsync(databaseName, sc.Script.Text);
             var operationId = result.ToScalar<Guid>();
             var finalState = false;
             string monitoringCommand = $".show operations | where OperationId ==  '{operationId}' " +
@@ -114,7 +114,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
                 
                 if (operationState != null && operationState?.IsFinal() == true)
                 {
-                    operationState.CommandText = sc.Text;
+                    operationState.CommandText = sc.Script.Text;
                     return operationState;
                 }
                 await Task.Delay(interval);
@@ -132,7 +132,7 @@ namespace KustoSchemaTools.Parser.KustoWriter
             sb.AppendLine(".execute script with(ContinueOnErrors = true) <|");
             foreach (var sc in scripts)
             {
-                sb.AppendLine(sc.Text);
+                sb.AppendLine(sc.Script.Text);
             }
 
             var script = sb.ToString();

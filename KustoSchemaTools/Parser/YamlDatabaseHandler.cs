@@ -20,14 +20,14 @@ namespace KustoSchemaTools.Parser
         protected List<IYamlSchemaPlugin<T>> Plugins { get; }
         public virtual async Task<T> LoadAsync()
         {
-            var folder = Path.Combine(Deployment, Database);
-            var dbFileName = Path.Combine(folder, "database.yml");
+            var folder = Path.Join(Deployment, Database);
+            var dbFileName = Path.Join(folder, "database.yml");
             var dbYaml = File.ReadAllText(dbFileName);
             var db = Serialization.YamlPascalCaseDeserializer.Deserialize<T>(dbYaml);
             db.Name = Database;
             foreach (var plugin in Plugins)
             {
-                await plugin.OnLoad(db, Path.Combine(Deployment, Database));
+                await plugin.OnLoad(db, Path.Join(Deployment, Database));
             }
             return db;
         }
@@ -35,7 +35,7 @@ namespace KustoSchemaTools.Parser
         public virtual async Task WriteAsync(T database)
         {
             var clone = database.Clone();
-            var path = Path.Combine(Deployment, Database);
+            var path = Path.Join(Deployment, Database);
             if(!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -46,7 +46,7 @@ namespace KustoSchemaTools.Parser
                 await plugin.OnWrite(clone, path);
             }
             var yaml = Serialization.YamlPascalCaseSerializer.Serialize(clone);
-            File.WriteAllText(Path.Combine(path, "database.yml"), yaml);
+            File.WriteAllText(Path.Join(path, "database.yml"), yaml);
         }
     }
 }
