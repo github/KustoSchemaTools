@@ -347,7 +347,23 @@ namespace KustoSchemaTools.Changes
             return result;
         }
 
-        private static bool SupportsFollowerClusterCommands() => false;
+        private static bool SupportsFollowerClusterCommands()
+        {
+            var disableFlag = Environment.GetEnvironmentVariable("DISABLE_FOLLOWER_COMMANDS");
+
+            if (disableFlag == null)
+            {
+                return true;
+            }
+
+            var isDisabled = bool.TryParse(disableFlag, out var parsed)
+                ? parsed
+                : string.Equals(disableFlag, "1", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(disableFlag, "yes", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(disableFlag, "true", StringComparison.OrdinalIgnoreCase);
+
+            return !isDisabled;
+        }
 
         private static void LogChangeResult(ILogger log, string entityKey, int scriptCount, bool alreadyExists)
         {
