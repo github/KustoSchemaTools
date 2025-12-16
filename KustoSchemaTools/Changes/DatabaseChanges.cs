@@ -217,6 +217,12 @@ namespace KustoSchemaTools.Changes
 
         public static List<IChange> GenerateFollowerChanges(FollowerDatabase oldState, FollowerDatabase newState, ILogger log)
         {
+            if (!SupportsFollowerClusterCommands())
+            {
+                log.LogDebug("Skipping follower database changes because cluster-scoped follower commands cannot be executed in the current rollout context.");
+                return [];
+            }
+
             List<IChange> result =
             [
                 .. GenerateFollowerCachingChanges(oldState, newState, db => db.Tables, "Table", "table"),
@@ -340,6 +346,8 @@ namespace KustoSchemaTools.Changes
 
             return result;
         }
+
+        private static bool SupportsFollowerClusterCommands() => false;
 
         private static void LogChangeResult(ILogger log, string entityKey, int scriptCount, bool alreadyExists)
         {
