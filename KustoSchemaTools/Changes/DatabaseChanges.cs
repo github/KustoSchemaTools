@@ -217,6 +217,12 @@ namespace KustoSchemaTools.Changes
 
         public static List<IChange> GenerateFollowerChanges(FollowerDatabase oldState, FollowerDatabase newState, ILogger log)
         {
+            if (!SupportsFollowerClusterCommands())
+            {
+                log.LogDebug("Skipping follower database changes because cluster-scoped follower commands cannot be executed in the current rollout context.");
+                return [];
+            }
+
             List<IChange> result =
             [
                 .. GenerateFollowerCachingChanges(oldState, newState, db => db.Tables, "Table", "table"),
@@ -339,6 +345,24 @@ namespace KustoSchemaTools.Changes
             }
 
             return result;
+        }
+
+        private static bool SupportsFollowerClusterCommands()
+        {
+            var disableFlag = Environment.GetEnvironmentVariable("DISABLE_FOLLOWER_COMMANDS");
+
+            if (disableFlag == null)
+            {
+                return true;
+            }
+
+            var isDisabled = bool.TryParse(disableFlag, out var parsed)
+                ? parsed
+                : string.Equals(disableFlag, "1", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(disableFlag, "yes", StringComparison.OrdinalIgnoreCase)
+                  || string.Equals(disableFlag, "true", StringComparison.OrdinalIgnoreCase);
+
+            return !isDisabled;
         }
 
         private static void LogChangeResult(ILogger log, string entityKey, int scriptCount, bool alreadyExists)
