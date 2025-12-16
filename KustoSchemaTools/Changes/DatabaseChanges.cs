@@ -194,13 +194,13 @@ namespace KustoSchemaTools.Changes
                 if (existing.ContainsKey(item.Key))
                 {
                     var change = new ScriptCompareChange(item.Key, existing[item.Key], item.Value);
-                    log.LogInformation($"{item.Key} already exists, created {change.Scripts.Count} script to apply the diffs");
+                    LogChangeResult(log, item.Key, change.Scripts.Count, alreadyExists: true);
                     tmp.Add(change);
                 }
                 else
                 {
                     var change = new ScriptCompareChange(item.Key, null, item.Value);
-                    log.LogInformation($"{item.Key} doesn't exist, created {change.Scripts.Count} scripts to create it.");
+                    LogChangeResult(log, item.Key, change.Scripts.Count, alreadyExists: false);
                     tmp.Add(change);
                 }
             }
@@ -339,6 +339,17 @@ namespace KustoSchemaTools.Changes
             }
 
             return result;
+        }
+
+        private static void LogChangeResult(ILogger log, string entityKey, int scriptCount, bool alreadyExists)
+        {
+            var level = scriptCount > 0 ? LogLevel.Information : LogLevel.Debug;
+            var scriptsLabel = scriptCount == 1 ? "script" : "scripts";
+            var message = alreadyExists
+                ? $"{entityKey} already exists, created {scriptCount} {scriptsLabel} to apply the diffs."
+                : $"{entityKey} doesn't exist, created {scriptCount} {scriptsLabel} to create it.";
+
+            log.Log(level, message);
         }
     }
 
