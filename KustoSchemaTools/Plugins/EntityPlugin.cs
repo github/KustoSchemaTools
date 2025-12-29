@@ -19,7 +19,7 @@ namespace KustoSchemaTools.Plugins
         public async override Task OnLoad(Database existingDatabase, string basePath)
         {
             var dict = Selector(existingDatabase);
-            var path = Path.Combine(basePath, SubFolder);
+            var path = Path.Join(basePath, SubFolder);
 
             if (Directory.Exists(path) == false) return;
             var files = Directory.GetFiles(path, "*.yml");
@@ -49,9 +49,9 @@ namespace KustoSchemaTools.Plugins
                 var yaml = Serialization.YamlPascalCaseSerializer.Serialize(entity.Value);
                 if (yaml.RowLength() >= MinFileLength)
                 {
-                    var entitySubfolderPath = Path.Combine(path, SubFolder);
+                    var entitySubfolderPath = Path.Join(path, SubFolder);
                     Directory.CreateDirectory(entitySubfolderPath);
-                    await File.WriteAllTextAsync(Path.Combine(entitySubfolderPath, $"{entity.Key}.yml"), yaml);
+                    await File.WriteAllTextAsync(Path.Join(entitySubfolderPath, $"{entity.Key}.yml"), yaml);
                     dict.Remove(entity.Key);
                 }
             }

@@ -96,14 +96,34 @@ namespace KustoSchemaTools
                 var clusterUrl = changeSet.To.Url;
 
                 var kustoHandler = KustoClusterHandlerFactory.Create(clusterName, clusterUrl);
-                var result = await kustoHandler.WriteAsync(changeSet);
-                
-                // Add the results from this cluster to the overall results list
-                allResults.AddRange(result);
+                try
+                {
+                    var result = await kustoHandler.WriteAsync(changeSet);
+
+                    // Add the results from this cluster to the overall results list
+                    allResults.AddRange(result);
+                }
+                catch (Exception ex)
+                {
+                    Log.LogError(ex, $"Failed to apply changes to cluster: {clusterName}");
+                    allResults.Add(CreateFailedClusterResult(clusterName, clusterUrl, ex));
+                }
             }
 
             Log.LogInformation($"Finished applying. Total scripts executed: {allResults.Count}");
             return allResults;
+        }
+
+        private static ScriptExecuteCommandResult CreateFailedClusterResult(string clusterName, string clusterUrl, Exception exception)
+        {
+            return new ScriptExecuteCommandResult
+            {
+                CommandType = $"cluster-script:{clusterName}",
+                OperationId = Guid.Empty,
+                Result = "Failed",
+                Reason = $"{exception.GetType().Name}: {exception.Message}",
+                CommandText = $"Apply cluster '{clusterName}' ({clusterUrl})"
+            };
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Text;
 using System.Data;
 using DiffPlex.DiffBuilder.Model;
 using Kusto.Language.Editor;
+using System.Linq;
 
 namespace KustoSchemaTools.Changes
 {
@@ -23,7 +24,7 @@ namespace KustoSchemaTools.Changes
             var to = To.CreateScripts(Entity, From == null);
             Markdown = string.Empty;
 
-            if (to.Any() == false) return;
+            if (!to.Any()) return;
 
             StringBuilder sb = new StringBuilder($"## {Entity}");
             sb.AppendLine();
@@ -32,8 +33,8 @@ namespace KustoSchemaTools.Changes
             foreach (var change in to)
             {
                 var before = from.ContainsKey(change.Kind) ? from[change.Kind] : null;
-                var beforeText = before?.Text ?? "";
-                var afterText = change.Text;
+                var beforeText = before?.Script.Text ?? string.Empty;
+                var afterText = change.Script.Text;
 
                 var singleLinebeforeText = new KustoCodeService(KustoCode.Parse(beforeText)).GetMinimalText(MinimalTextKind.SingleLine);
                 var singleLineafterText = new KustoCodeService(KustoCode.Parse(afterText)).GetMinimalText(MinimalTextKind.SingleLine);
@@ -43,7 +44,7 @@ namespace KustoSchemaTools.Changes
 
                 var zipped = reducedBefore.GetLexicalTokens().Zip(reducedAfter.GetLexicalTokens()).ToList();
                 var diffs = zipped.Where(itm => itm.First.Text != itm.Second.Text).ToList();
-                if(diffs.Any() == false) continue;
+                if (!diffs.Any()) continue;
 
                 if (singleLinebeforeText.Equals(singleLineafterText)) continue;
 
@@ -51,10 +52,19 @@ namespace KustoSchemaTools.Changes
                 var diff = InlineDiffBuilder.Diff(beforeText, afterText, true);
                 if (diff.Lines.All(itm => itm.Type == ChangeType.Unchanged)) continue;
 
-                var code = KustoCode.Parse(change.Text);                
+                var code = KustoCode.Parse(change.Script.Text);                
 
                 var diagnostics = code.GetDiagnostics();
-                change.IsValid = diagnostics.Any() == false || change.Order == -1;
+                var hasDiagnostics = diagnostics.Any();
+                change.IsValid = !hasDiagnostics || change.Script.Order == -1;
+                change.Diagnostics = hasDiagnostics
+                    ? diagnostics.Select(diagnostic => new ScriptDiagnostic
+                    {
+                        Start = diagnostic.Start,
+                        End = diagnostic.End,
+                        Description = diagnostic.Description
+                    }).ToList()
+                    : null;
                 Scripts.Add(change);     
 
 
@@ -102,10 +112,10 @@ namespace KustoSchemaTools.Changes
                 }
                 sb.AppendLine("<tr>");
                 sb.AppendLine($"    <td colspan=\"2\">Script:</td>");
-                sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Text.PrettifyKql()}</pre></td>");
+                sb.AppendLine($"    <td colspan=\"10\"><pre lang=\"kql\">{change.Script.Text.PrettifyKql()}</pre></td>");
                 sb.AppendLine("</tr>");
 
-                if (change.IsValid == false)
+                if (change.IsValid is false)
                 {
                     foreach (var diagnostic in diagnostics)
                     {
