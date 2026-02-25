@@ -22,6 +22,8 @@ namespace KustoSchemaTools.Model
         public string? RowLevelSecurity { get; set; }
         [Obsolete("Use policies instead")]
         public bool RestrictedViewAccess { get; set; } = false;
+        [Obsolete("Use policies instead")]
+        public bool AllowMaterializedViewsWithoutRowLevelSecurity { get; set; } = false;
 
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {

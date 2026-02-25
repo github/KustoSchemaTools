@@ -72,6 +72,11 @@ namespace KustoSchemaTools.Parser
                     policy.RowLevelSecurity = entity.Value.RowLevelSecurity;
                 }
 
+                if (entity.Value.AllowMaterializedViewsWithoutRowLevelSecurity)
+                {
+                    policy.AllowMaterializedViewsWithoutRowLevelSecurity = true;
+                }
+
                 policy.RestrictedViewAccess |= entity.Value.RestrictedViewAccess;
 
                 if (policy.Retention == database.DefaultRetentionAndCache.Retention)

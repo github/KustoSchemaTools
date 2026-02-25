@@ -10,6 +10,7 @@ namespace KustoSchemaTools.Model
         public string? HotCache { get; set; }
         public PartitioningPolicy? Partitioning { get; set; }
         public string? RowLevelSecurity { get; set; }
+        public bool AllowMaterializedViewsWithoutRowLevelSecurity { get; set; } = false;
 
 
         public List<DatabaseScriptContainer> CreateScripts(string name, string entity)
@@ -26,7 +27,10 @@ namespace KustoSchemaTools.Model
           
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter {entity} {name} policy row_level_security enable ```{RowLevelSecurity}```"));
+                var rlsWithClause = AllowMaterializedViewsWithoutRowLevelSecurity
+                    ? " with (allowMaterializedViewsWithoutRowLevelSecurity=true)"
+                    : "";
+                scripts.Add(new DatabaseScriptContainer("RowLevelSecurity", 57, $".alter {entity} {name} policy row_level_security enable{rlsWithClause} ```{RowLevelSecurity}```"));
             }
             else
             {
