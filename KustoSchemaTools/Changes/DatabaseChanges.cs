@@ -48,6 +48,18 @@ namespace KustoSchemaTools.Changes
 
             result.AddRange(GenerateDeletions(oldState, newState.Deletions, log));
 
+            // Kusto does not expose AllowMaterializedViewsWithoutRowLevelSecurity in any query output,
+            // so propagate the flag from the desired state to the cluster state to avoid phantom diffs.
+            foreach (var table in newState.Tables)
+            {
+                if (table.Value.Policies?.AllowMaterializedViewsWithoutRowLevelSecurity == true
+                    && oldState.Tables.ContainsKey(table.Key)
+                    && oldState.Tables[table.Key].Policies != null)
+                {
+                    oldState.Tables[table.Key].Policies.AllowMaterializedViewsWithoutRowLevelSecurity = true;
+                }
+            }
+
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log, (oldItem, newItem) => oldItem != null || newItem.Columns?.Any() == true));
             var mvChanges = GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log);
             foreach(var mvChange in mvChanges)
