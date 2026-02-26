@@ -27,10 +27,6 @@ namespace KustoSchemaTools.Model
           
             if (!string.IsNullOrEmpty(RowLevelSecurity))
             {
-                if (AllowMaterializedViewsWithoutRowLevelSecurity && entity != "table")
-                {
-                    throw new ArgumentException($"AllowMaterializedViewsWithoutRowLevelSecurity can only be set on table row level security policies, not on {entity} '{name}'.");
-                }
                 var rlsWithClause = AllowMaterializedViewsWithoutRowLevelSecurity
                     ? " with (allowMaterializedViewsWithoutRowLevelSecurity=true)"
                     : "";
