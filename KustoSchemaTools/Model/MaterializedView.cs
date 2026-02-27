@@ -25,6 +25,7 @@ namespace KustoSchemaTools.Model
         public string? RowLevelSecurity { get; set; }
         public Policy? Policies { get; set; }
         public bool Preformatted { get; set; } = false;
+        public bool AllowMaterializedViewsWithoutRowLevelSecurity { get; set; } = false;
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var asyncSetup = isNew && Backfill == true;
@@ -36,7 +37,8 @@ namespace KustoSchemaTools.Model
                 "RetentionAndCachePolicy",
                 "RowLevelSecurity",
                 "Policies",
-                "Preformatted"
+                "Preformatted",
+                "AllowMaterializedViewsWithoutRowLevelSecurity"
                 ]);
                 
             if (!asyncSetup)
@@ -51,6 +53,13 @@ namespace KustoSchemaTools.Model
                 .Select(p => new { Name = p.Name, Value = p.GetValue(this) })
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
                 .Select(p => $"{p.Name}=```{p.Value}```"));
+
+            if (AllowMaterializedViewsWithoutRowLevelSecurity && isNew)
+            {
+                properties = string.IsNullOrEmpty(properties)
+                    ? "allowMaterializedViewsWithoutRowLevelSecurity=true"
+                    : $"{properties}, allowMaterializedViewsWithoutRowLevelSecurity=true";
+            }
 
             if (asyncSetup)
             {

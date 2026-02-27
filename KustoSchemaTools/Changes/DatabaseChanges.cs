@@ -60,6 +60,15 @@ namespace KustoSchemaTools.Changes
                 }
             }
 
+            foreach (var mv in newState.MaterializedViews)
+            {
+                if (mv.Value.AllowMaterializedViewsWithoutRowLevelSecurity
+                    && oldState.MaterializedViews.ContainsKey(mv.Key))
+                {
+                    oldState.MaterializedViews[mv.Key].AllowMaterializedViewsWithoutRowLevelSecurity = true;
+                }
+            }
+
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Tables, nameof(newState.Tables), log, (oldItem, newItem) => oldItem != null || newItem.Columns?.Any() == true));
             var mvChanges = GenerateScriptCompareChanges(oldState, newState, db => db.MaterializedViews, nameof(newState.MaterializedViews), log);
             foreach(var mvChange in mvChanges)
