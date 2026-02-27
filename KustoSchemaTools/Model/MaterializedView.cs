@@ -54,7 +54,7 @@ namespace KustoSchemaTools.Model
                 .Where(p => !string.IsNullOrWhiteSpace(p.Value?.ToString()))
                 .Select(p => $"{p.Name}=```{p.Value}```"));
 
-            if (AllowMaterializedViewsWithoutRowLevelSecurity)
+            if (AllowMaterializedViewsWithoutRowLevelSecurity && isNew)
             {
                 properties = string.IsNullOrEmpty(properties)
                     ? "allowMaterializedViewsWithoutRowLevelSecurity=true"
