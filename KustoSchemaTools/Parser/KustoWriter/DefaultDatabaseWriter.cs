@@ -12,7 +12,34 @@ namespace KustoSchemaTools.Parser.KustoWriter
     {
         public async Task WriteAsync(Database sourceDb, Database targetDb, KustoClient client, ILogger logger)
         {
-            var changes = DatabaseChanges.GenerateChanges(targetDb, sourceDb, targetDb.Name, logger);
+            var followerMeta = FollowerLoader.LoadFollower(targetDb.Name, client);
+            // Treat as follower only when metadata exists (.show follower database returned a row)
+            var isFollower = followerMeta.IsFollower;
+
+            List<IChange> changes;
+            if (isFollower)
+            {
+                // Build desired follower from YAML/source DB
+                var desiredFollower = new FollowerDatabase
+                {
+                    DatabaseName = targetDb.Name,
+                    Permissions = new FollowerPermissions
+                    {
+                        ModificationKind = followerMeta.Permissions.ModificationKind,
+                        Admins = sourceDb.Admins,
+                        Viewers = sourceDb.Viewers,
+                        LeaderName = followerMeta.Permissions.LeaderName
+                    },
+                    Cache = followerMeta.Cache
+                };
+
+                changes = DatabaseChanges.GenerateFollowerChanges(followerMeta, desiredFollower, logger);
+            }
+            else
+            {
+                changes = DatabaseChanges.GenerateChanges(targetDb, sourceDb, targetDb.Name, logger);
+            }
+
             var results = await ApplyChangesToDatabase(targetDb.Name, changes, client, logger);
 
             foreach (var result in results)

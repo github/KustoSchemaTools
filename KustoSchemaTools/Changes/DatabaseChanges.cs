@@ -251,6 +251,19 @@ namespace KustoSchemaTools.Changes
 
             ];
 
+            var permissionChanges = new List<IChange>
+            {
+                new FollowerPermissionChange(newState.DatabaseName, "Admins", oldState.Permissions.Admins, newState.Permissions.Admins, newState.Permissions.LeaderName),
+                new FollowerPermissionChange(newState.DatabaseName, "Viewers", oldState.Permissions.Viewers, newState.Permissions.Viewers, newState.Permissions.LeaderName)
+            }.Where(itm => itm.Scripts.Any()).ToList();
+
+            if (permissionChanges.Any())
+            {
+                log.LogInformation($"Detected {permissionChanges.Count} follower permission changes");
+                permissionChanges.Insert(0, new Heading("Permissions (Follower)"));
+                result.AddRange(permissionChanges);
+            }
+
             if (oldState.Permissions.ModificationKind != newState.Permissions.ModificationKind)
             {
                 var kind = newState.Permissions.ModificationKind.ToString().ToLower();
