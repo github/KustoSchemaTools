@@ -1,0 +1,26 @@
+name: Add fundamentals PRs and issues to fundamentals board
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+on:
+  issues:
+    types:
+      - opened
+      - labeled
+  pull_request:
+    types:
+      - opened
+      - labeled
+
+jobs:
+  add-to-project:
+    name: Add issue to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/github/projects/4292
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          labeled: fundamentals
