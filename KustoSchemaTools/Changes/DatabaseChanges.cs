@@ -22,6 +22,8 @@ namespace KustoSchemaTools.Changes
                     otherFromScripts.AddRange(oldState.Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
                 if (oldState.DefaultRetentionAndCache != null)
                     otherFromScripts.AddRange(oldState.DefaultRetentionAndCache.CreateScripts(name, "database"));
+                if (oldState.ManagedIdentityPolicies != null)
+                    otherFromScripts.AddRange(oldState.ManagedIdentityPolicies.Select(p => p.CreateScript(name)));
             }
 
             var otherToScripts = new List<DatabaseScriptContainer>();
@@ -29,6 +31,8 @@ namespace KustoSchemaTools.Changes
                 otherToScripts.AddRange(newState.Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
             if (newState.DefaultRetentionAndCache != null)
                 otherToScripts.AddRange(newState.DefaultRetentionAndCache.CreateScripts(name, "database"));
+            if (newState.ManagedIdentityPolicies != null)
+                otherToScripts.AddRange(newState.ManagedIdentityPolicies.Select(p => p.CreateScript(name)));
 
             if (otherToScripts.Count > 0)
             {
