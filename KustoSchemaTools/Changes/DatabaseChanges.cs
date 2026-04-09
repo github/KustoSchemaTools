@@ -22,8 +22,8 @@ namespace KustoSchemaTools.Changes
                     otherFromScripts.AddRange(oldState.Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
                 if (oldState.DefaultRetentionAndCache != null)
                     otherFromScripts.AddRange(oldState.DefaultRetentionAndCache.CreateScripts(name, "database"));
-                if (oldState.ManagedIdentityPolicies != null && oldState.ManagedIdentityPolicies.Any())
-                    otherFromScripts.Add(ManagedIdentityPolicy.CreateCombinedScript(name, oldState.ManagedIdentityPolicies));
+                if (oldState.Policies?.ManagedIdentity != null && oldState.Policies.ManagedIdentity.Any())
+                    otherFromScripts.Add(ManagedIdentityPolicy.CreateCombinedScript(name, oldState.Policies.ManagedIdentity));
             }
 
             var otherToScripts = new List<DatabaseScriptContainer>();
@@ -31,8 +31,8 @@ namespace KustoSchemaTools.Changes
                 otherToScripts.AddRange(newState.Scripts.Select(itm => new DatabaseScriptContainer(itm, "DatabaseScript")));
             if (newState.DefaultRetentionAndCache != null)
                 otherToScripts.AddRange(newState.DefaultRetentionAndCache.CreateScripts(name, "database"));
-            if (newState.ManagedIdentityPolicies != null && newState.ManagedIdentityPolicies.Any())
-                otherToScripts.Add(ManagedIdentityPolicy.CreateCombinedScript(name, newState.ManagedIdentityPolicies));
+            if (newState.Policies?.ManagedIdentity != null && newState.Policies.ManagedIdentity.Any())
+                otherToScripts.Add(ManagedIdentityPolicy.CreateCombinedScript(name, newState.Policies.ManagedIdentity));
 
             if (otherToScripts.Count > 0)
             {

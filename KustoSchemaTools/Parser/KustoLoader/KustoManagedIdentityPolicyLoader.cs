@@ -17,7 +17,9 @@ namespace KustoSchemaTools.Parser.KustoLoader
         {
             var response = await kusto.Client.ExecuteQueryAsync(databaseName, script, new ClientRequestProperties());
             var rows = response.As<ManagedIdentityRow>();
-            database.ManagedIdentityPolicies = rows
+            if (database.Policies == null)
+                database.Policies = new DatabasePolicies();
+            database.Policies.ManagedIdentity = rows
                 .Select(r => new ManagedIdentityPolicy
                 {
                     ObjectId = r.ObjectId,

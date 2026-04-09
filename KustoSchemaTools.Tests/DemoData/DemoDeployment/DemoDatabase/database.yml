@@ -13,11 +13,12 @@ admins:
 - name: SPN-ADMIN
   id: aadapp=f678ce29-8f92-4d6e-b95d-f2ed8fa7713f;7396cfeb-2920-488f-b0bb-81a584d34a24
 
-managedIdentityPolicies:
-- objectId: 12345678-1234-1234-1234-123456789abc
-  allowedUsages:
-  - NativeIngestion
-  - ExternalTable
+policies:
+  managedIdentity:
+  - objectId: 12345678-1234-1234-1234-123456789abc
+    allowedUsages:
+    - NativeIngestion
+    - ExternalTable
 
 tables:
   sourceTable:

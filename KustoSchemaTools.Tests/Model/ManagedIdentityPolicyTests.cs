@@ -129,12 +129,15 @@ namespace KustoSchemaTools.Tests.ManagedIdentity
             var newState = new Database
             {
                 Name = "TestDb",
-                ManagedIdentityPolicies = new List<ManagedIdentityPolicy>
+                Policies = new DatabasePolicies
                 {
-                    new ManagedIdentityPolicy
+                    ManagedIdentity = new List<ManagedIdentityPolicy>
                     {
-                        ObjectId = "12345678-1234-1234-1234-123456789abc",
-                        AllowedUsages = new List<string> { "NativeIngestion" }
+                        new ManagedIdentityPolicy
+                        {
+                            ObjectId = "12345678-1234-1234-1234-123456789abc",
+                            AllowedUsages = new List<string> { "NativeIngestion" }
+                        }
                     }
                 }
             };
@@ -161,17 +164,20 @@ namespace KustoSchemaTools.Tests.ManagedIdentity
             var newState = new Database
             {
                 Name = "TestDb",
-                ManagedIdentityPolicies = new List<ManagedIdentityPolicy>
+                Policies = new DatabasePolicies
                 {
-                    new ManagedIdentityPolicy
+                    ManagedIdentity = new List<ManagedIdentityPolicy>
                     {
-                        ObjectId = "aaaaaaaa-1111-2222-3333-444444444444",
-                        AllowedUsages = new List<string> { "NativeIngestion" }
-                    },
-                    new ManagedIdentityPolicy
-                    {
-                        ObjectId = "bbbbbbbb-1111-2222-3333-444444444444",
-                        AllowedUsages = new List<string> { "ExternalTable" }
+                        new ManagedIdentityPolicy
+                        {
+                            ObjectId = "aaaaaaaa-1111-2222-3333-444444444444",
+                            AllowedUsages = new List<string> { "NativeIngestion" }
+                        },
+                        new ManagedIdentityPolicy
+                        {
+                            ObjectId = "bbbbbbbb-1111-2222-3333-444444444444",
+                            AllowedUsages = new List<string> { "ExternalTable" }
+                        }
                     }
                 }
             };
@@ -202,17 +208,23 @@ namespace KustoSchemaTools.Tests.ManagedIdentity
             var oldState = new Database
             {
                 Name = "TestDb",
-                ManagedIdentityPolicies = new List<ManagedIdentityPolicy> { policy }
+                Policies = new DatabasePolicies
+                {
+                    ManagedIdentity = new List<ManagedIdentityPolicy> { policy }
+                }
             };
             var newState = new Database
             {
                 Name = "TestDb",
-                ManagedIdentityPolicies = new List<ManagedIdentityPolicy>
+                Policies = new DatabasePolicies
                 {
-                    new ManagedIdentityPolicy
+                    ManagedIdentity = new List<ManagedIdentityPolicy>
                     {
-                        ObjectId = "12345678-1234-1234-1234-123456789abc",
-                        AllowedUsages = new List<string> { "NativeIngestion" }
+                        new ManagedIdentityPolicy
+                        {
+                            ObjectId = "12345678-1234-1234-1234-123456789abc",
+                            AllowedUsages = new List<string> { "NativeIngestion" }
+                        }
                     }
                 }
             };
