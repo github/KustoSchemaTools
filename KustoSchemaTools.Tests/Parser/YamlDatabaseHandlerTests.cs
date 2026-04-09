@@ -41,6 +41,15 @@ namespace KustoSchemaTools.Tests.Parser
             Assert.NotNull(tt.Policies);
             Assert.False(tt.Policies!.RestrictedViewAccess);
             Assert.Equal("120d", tt.Policies?.Retention);
+
+            // Verify managed identity policies are loaded from database.yml
+            Assert.NotNull(db.ManagedIdentityPolicies);
+            Assert.Single(db.ManagedIdentityPolicies);
+            var miPolicy = db.ManagedIdentityPolicies[0];
+            Assert.Equal("12345678-1234-1234-1234-123456789abc", miPolicy.ObjectId);
+            Assert.Equal(2, miPolicy.AllowedUsages.Count);
+            Assert.Contains("NativeIngestion", miPolicy.AllowedUsages);
+            Assert.Contains("ExternalTable", miPolicy.AllowedUsages);
         }
 
         [Fact]
