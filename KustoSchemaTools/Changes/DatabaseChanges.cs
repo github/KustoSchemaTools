@@ -113,6 +113,21 @@ namespace KustoSchemaTools.Changes
             result.AddRange(mvChanges);
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ContinuousExports, nameof(newState.ContinuousExports), log));
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.Functions, nameof(newState.Functions), log));
+
+            // For delta external tables, the schema is auto-inferred from the delta log.
+            // If the YAML doesn't specify a schema, clear the cluster-side schema so it
+            // doesn't cause a perpetual diff. If the YAML does specify a schema, keep the
+            // cluster-side schema for proper comparison.
+            foreach (var et in newState.ExternalTables)
+            {
+                if (et.Value.Kind?.ToLower() == "delta"
+                    && et.Value.Schema?.Any() != true
+                    && oldState.ExternalTables.ContainsKey(et.Key))
+                {
+                    oldState.ExternalTables[et.Key].Schema = null;
+                }
+            }
+
             result.AddRange(GenerateScriptCompareChanges(oldState, newState, db => db.ExternalTables, nameof(newState.ExternalTables), log));
 
             if (newState.EntityGroups.Any())

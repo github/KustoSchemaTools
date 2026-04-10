@@ -137,8 +137,6 @@ namespace KustoSchemaTools.Model
 
         private string CreateDeltaScript(string name)
         {
-            if (string.IsNullOrWhiteSpace(DataFormat)) throw new ArgumentException("DataFormat can't be empty");
-
             var sb = new StringBuilder();
             sb.AppendLine($".create-or-alter external table {name}");
             if (Schema?.Any() == true)
@@ -146,11 +144,18 @@ namespace KustoSchemaTools.Model
                 sb.AppendLine($"({string.Join(", ", Schema.Select(c => $"{c.Key.BracketIfIdentifier()}:{c.Value}"))})");
             }
             sb.AppendLine("kind=delta");            
-            sb.AppendLine($"(h@'{ConnectionString}'");
+            sb.AppendLine($"(h@'{ConnectionString}')");
 
+            var withProps = new List<string>();
+            if (!string.IsNullOrEmpty(Folder)) withProps.Add($"folder='{Folder}'");
+            if (!string.IsNullOrEmpty(DocString)) withProps.Add($"docString='{DocString}'");
             var ext = string.IsNullOrWhiteSpace(FileExtensions) ? "" : FileExtensions.StartsWith(".") ? FileExtensions : "." + FileExtensions;
+            if (!string.IsNullOrEmpty(ext)) withProps.Add($"fileExtension='{ext}'");
 
-            sb.AppendLine($"with(folder='{Folder}', docString='{DocString}', fileExtension='{ext}') ");
+            if (withProps.Any())
+            {
+                sb.AppendLine($"with({string.Join(", ", withProps)})");
+            }
 
             return sb.ToString();
         }
