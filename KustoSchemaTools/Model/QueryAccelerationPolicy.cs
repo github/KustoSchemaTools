@@ -11,6 +11,8 @@ namespace KustoSchemaTools.Model
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<HotWindow>? HotWindows { get; set; }
 
+        public bool ShouldSerializeHotWindows() => HotWindows?.Count > 0;
+
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string? MaxAge { get; set; } // timespan, e.g. "00:05:00". Default 5 min, minimum 1 min.
 
