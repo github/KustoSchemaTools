@@ -9,7 +9,7 @@ namespace KustoSchemaTools.Parser.KustoLoader
     {
         const string script = @"
 .show database policy managed_identity
-| project Policies = parse_json(Policies)
+| project Policies = parse_json(Policy)
 | mv-expand Policy = Policies
 | project ObjectId = tostring(Policy.ObjectId), AllowedUsages = tostring(Policy.AllowedUsages)";
 
