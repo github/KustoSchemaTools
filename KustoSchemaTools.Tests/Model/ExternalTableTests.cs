@@ -213,7 +213,7 @@ namespace KustoSchemaTools.Tests
         }
 
         [Fact]
-        public void QueryAccelerationPolicy_Validate_HotMissing_Throws()
+        public void QueryAccelerationPolicy_Validate_HotMissing_WhenEnabled_Throws()
         {
             var policy = new QueryAccelerationPolicy
             {
@@ -222,6 +222,18 @@ namespace KustoSchemaTools.Tests
 
             var ex = Assert.Throws<ArgumentException>(() => policy.Validate());
             Assert.Contains("Hot period is required", ex.Message);
+        }
+
+        [Fact]
+        public void QueryAccelerationPolicy_Validate_Disabled_WithoutHot_Succeeds()
+        {
+            var policy = new QueryAccelerationPolicy
+            {
+                IsEnabled = false,
+            };
+
+            // Should not throw — Hot is not required when disabling
+            policy.Validate();
         }
 
         [Fact]

@@ -24,8 +24,11 @@ namespace KustoSchemaTools.Model
 
         public void Validate()
         {
+            if (!IsEnabled)
+                return;
+
             if (string.IsNullOrWhiteSpace(Hot))
-                throw new ArgumentException("Hot period is required for query acceleration policy");
+                throw new ArgumentException("Hot period is required when query acceleration is enabled");
 
             if (!TryParseKustoTimespan(Hot, out var hotPeriod))
                 throw new ArgumentException($"Invalid Hot period format: {Hot}. Expected a timespan like '7d' or '7.00:00:00'");
