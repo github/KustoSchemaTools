@@ -137,6 +137,8 @@ namespace KustoSchemaTools.Model
 
         private string CreateDeltaScript(string name)
         {
+            if (string.IsNullOrWhiteSpace(ConnectionString)) throw new ArgumentException("ConnectionString can't be empty");
+
             var sb = new StringBuilder();
             sb.AppendLine($".create-or-alter external table {name}");
             if (Schema?.Any() == true)

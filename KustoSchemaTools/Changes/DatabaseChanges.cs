@@ -122,9 +122,10 @@ namespace KustoSchemaTools.Changes
             {
                 if (et.Value.Kind?.ToLower() == "delta"
                     && et.Value.Schema?.Any() != true
-                    && oldState.ExternalTables.ContainsKey(et.Key))
+                    && oldState.ExternalTables.TryGetValue(et.Key, out var oldExternalTable)
+                    && oldExternalTable.Kind?.ToLower() == "delta")
                 {
-                    oldState.ExternalTables[et.Key].Schema = null;
+                    oldExternalTable.Schema = null;
                 }
             }
 
