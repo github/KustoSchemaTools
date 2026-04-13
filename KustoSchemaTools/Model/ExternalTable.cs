@@ -77,7 +77,7 @@ namespace KustoSchemaTools.Model
                 if (Kind.ToLower() != "delta")
                     throw new ArgumentException("Query acceleration policy is only supported on delta external tables");
 
-                if (Schema?.Count > 900)
+                if (QueryAcceleration.IsEnabled && Schema?.Count > 900)
                     throw new ArgumentException($"External tables with query acceleration cannot exceed 900 columns. Schema has {Schema.Count} columns.");
 
                 scripts.Add(CreateQueryAccelerationPolicyScript(name));

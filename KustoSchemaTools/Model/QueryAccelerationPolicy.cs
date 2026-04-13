@@ -46,7 +46,7 @@ namespace KustoSchemaTools.Model
             return new QueryAccelerationPolicy
             {
                 IsEnabled = IsEnabled,
-                Hot = NormalizeTimespan(Hot),
+                Hot = Hot != null ? NormalizeTimespan(Hot) : null,
                 HotWindows = HotWindows,
                 MaxAge = MaxAge != null ? NormalizeTimespan(MaxAge) : null,
                 ManagedIdentity = ManagedIdentity,
