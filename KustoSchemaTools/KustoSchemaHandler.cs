@@ -147,48 +147,72 @@ namespace KustoSchemaTools
             var sb = new StringBuilder();
             bool isValid = true;
 
+            // Compute per-cluster metadata first (for logging and validity)
+            var clusterRenderModels = new List<ClusterRenderModel>();
             foreach (var clusterDiff in diffData.ClusterDiffs)
             {
-                if (logDetails)
-                {
-                    Log.LogInformation($"Generating diff markdown for {Path.Join(path, databaseName)} => {clusterDiff.Cluster.Name}/{databaseName}");
-                }
-
                 var changes = clusterDiff.Changes;
                 var comments = changes.Select(change => change.Comment).OfType<Comment>().ToList();
                 var clusterValid = IsDiffValid(changes);
                 isValid &= clusterValid;
 
-                sb.AppendLine($"# {clusterDiff.Cluster.Name}/{databaseName} ({clusterDiff.Cluster.Url})");
+                var fingerprint = BuildClusterFingerprint(changes, comments, clusterValid);
 
-                foreach (var comment in comments)
+                clusterRenderModels.Add(new ClusterRenderModel(clusterDiff, changes, comments, clusterValid, fingerprint));
+
+                if (logDetails)
+                {
+                    Log.LogInformation($"Generating diff markdown for {Path.Join(path, databaseName)} => {clusterDiff.Cluster.Name}/{databaseName}");
+                    var scriptSb = new StringBuilder();
+                    foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid is true).OrderBy(itm => itm.Script.Order))
+                    {
+                        scriptSb.AppendLine(script.Script.Text);
+                    }
+                    Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
+                }
+            }
+
+            // Group clusters with identical diffs
+            var groups = clusterRenderModels.GroupBy(m => m.Fingerprint).ToList();
+
+            foreach (var group in groups)
+            {
+                var clusters = group.ToList();
+                var representative = clusters.First();
+
+                // Build combined header
+                var clusterHeaders = clusters.Select(c => $"{c.Context.Cluster.Name}/{databaseName} ({c.Context.Cluster.Url})");
+                if (clusters.Count == 1)
+                {
+                    sb.AppendLine($"# {clusterHeaders.First()}");
+                }
+                else
+                {
+                    sb.AppendLine($"# {clusters.Count} clusters with identical changes");
+                    foreach (var header in clusterHeaders)
+                    {
+                        sb.AppendLine($"- {header}");
+                    }
+                    sb.AppendLine();
+                }
+
+                foreach (var comment in representative.Comments)
                 {
                     sb.AppendLine($"> [!{comment.Kind.ToString().ToUpper()}]");
                     sb.AppendLine($"> {comment.Text}");
                     sb.AppendLine();
                 }
 
-                if (changes.Count == 0)
+                if (representative.Changes.Count == 0)
                 {
                     sb.AppendLine("No changes detected");
                 }
 
-                foreach (var change in changes)
+                foreach (var change in representative.Changes)
                 {
                     sb.AppendLine(change.Markdown);
                     sb.AppendLine();
                     sb.AppendLine();
-                }
-
-                if (logDetails)
-                {
-                    var scriptSb = new StringBuilder();
-                    foreach (var script in changes.SelectMany(itm => itm.Scripts).Where(itm => itm.IsValid is true).OrderBy(itm => itm.Script.Order))
-                    {
-                        scriptSb.AppendLine(script.Script.Text);
-                    }
-
-                    Log.LogInformation($"Following scripts will be applied:\n{scriptSb}");
                 }
             }
 
@@ -212,6 +236,46 @@ namespace KustoSchemaTools
             }
 
             return (sb.ToString(), isValid);
+        }
+
+        /// <summary>
+        /// Builds a canonical fingerprint for a cluster's diff output.
+        /// Clusters with the same fingerprint will be grouped together in the markdown.
+        /// </summary>
+        public static string BuildClusterFingerprint(List<IChange> changes, List<Comment> comments, bool isValid)
+        {
+            var sb = new StringBuilder();
+            sb.Append($"valid:{isValid};");
+
+            foreach (var comment in comments.OrderBy(c => c.Kind).ThenBy(c => c.Text))
+            {
+                sb.Append($"comment:{comment.Kind}:{comment.FailsRollout}:{comment.Text};");
+            }
+
+            foreach (var change in changes)
+            {
+                sb.Append($"change:{change.Markdown};");
+            }
+
+            return sb.ToString();
+        }
+
+        private sealed class ClusterRenderModel
+        {
+            public ClusterRenderModel(ClusterDiffContext context, List<IChange> changes, List<Comment> comments, bool isValid, string fingerprint)
+            {
+                Context = context;
+                Changes = changes;
+                Comments = comments;
+                IsValid = isValid;
+                Fingerprint = fingerprint;
+            }
+
+            public ClusterDiffContext Context { get; }
+            public List<IChange> Changes { get; }
+            public List<Comment> Comments { get; }
+            public bool IsValid { get; }
+            public string Fingerprint { get; }
         }
 
         private StructuredDiff ConvertToStructuredDiff(string clusterName, string clusterUrl, string databaseName, List<IChange> changes)
