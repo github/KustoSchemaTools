@@ -118,14 +118,30 @@ namespace KustoSchemaTools.Changes
             // If the YAML doesn't specify a schema, clear the cluster-side schema so it
             // doesn't cause a perpetual diff. If the YAML does specify a schema, keep the
             // cluster-side schema for proper comparison.
+            //
+            // For query acceleration policies, since we use .alter-merge, any property
+            // omitted from the YAML means "don't manage." Clear the corresponding
+            // cluster-side property so it doesn't cause a phantom diff.
             foreach (var et in newState.ExternalTables)
             {
                 if (et.Value.Kind?.ToLower() == "delta"
-                    && et.Value.Schema?.Any() != true
                     && oldState.ExternalTables.TryGetValue(et.Key, out var oldExternalTable)
                     && oldExternalTable.Kind?.ToLower() == "delta")
                 {
-                    oldExternalTable.Schema = null;
+                    if (et.Value.Schema?.Any() != true)
+                    {
+                        oldExternalTable.Schema = null;
+                    }
+
+                    if (et.Value.QueryAcceleration != null && oldExternalTable.QueryAcceleration != null)
+                    {
+                        var yaml = et.Value.QueryAcceleration;
+                        var cluster = oldExternalTable.QueryAcceleration;
+                        if (yaml.MaxAge == null) cluster.MaxAge = null;
+                        if (yaml.ManagedIdentity == null) cluster.ManagedIdentity = null;
+                        if (yaml.HotDateTimeColumn == null) cluster.HotDateTimeColumn = null;
+                        if (yaml.HotWindows?.Any() != true) cluster.HotWindows = null;
+                    }
                 }
             }
 
