@@ -1,5 +1,7 @@
 ﻿using KustoSchemaTools.Changes;
+using KustoSchemaTools.Helpers;
 using KustoSchemaTools.Parser;
+using Newtonsoft.Json;
 using System.Text;
 
 namespace KustoSchemaTools.Model
@@ -40,6 +42,8 @@ namespace KustoSchemaTools.Model
 
         #endregion
 
+        public QueryAccelerationPolicy? QueryAcceleration { get; set; }
+
         public List<DatabaseScriptContainer> CreateScripts(string name, bool isNew)
         {
             var container = new DatabaseScriptContainer
@@ -66,7 +70,20 @@ namespace KustoSchemaTools.Model
                     throw new ArgumentException($"Kind {Kind} is not supported as external table");
             }
 
-            return new List<DatabaseScriptContainer> { container };
+            var scripts = new List<DatabaseScriptContainer> { container };
+
+            if (QueryAcceleration != null)
+            {
+                if (Kind.ToLower() != "delta")
+                    throw new ArgumentException("Query acceleration policy is only supported on delta external tables");
+
+                if (QueryAcceleration.IsEnabled && Schema?.Count > 900)
+                    throw new ArgumentException($"External tables with query acceleration cannot exceed 900 columns. Schema has {Schema.Count} columns.");
+
+                scripts.Add(CreateQueryAccelerationPolicyScript(name));
+            }
+
+            return scripts;
         }
         private string CreateStorageScript(string name)
         {
@@ -160,6 +177,20 @@ namespace KustoSchemaTools.Model
             }
 
             return sb.ToString();
+        }
+
+        private DatabaseScriptContainer CreateQueryAccelerationPolicyScript(string name)
+        {
+            QueryAcceleration!.Validate();
+            var normalized = QueryAcceleration.Normalize();
+            var json = JsonConvert.SerializeObject(normalized, new JsonSerializerSettings
+            {
+                ContractResolver = new Serialization.PascalCaseContractResolver(),
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.None
+            });
+            return new DatabaseScriptContainer("QueryAccelerationPolicy", 80,
+                $".alter-merge external table {name} policy query_acceleration '{json}'");
         }
     }
 }
