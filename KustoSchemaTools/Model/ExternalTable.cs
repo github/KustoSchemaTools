@@ -77,6 +77,9 @@ namespace KustoSchemaTools.Model
                 if (Kind.ToLower() != "delta")
                     throw new ArgumentException("Query acceleration policy is only supported on delta external tables");
 
+                if (Schema?.Count > 900)
+                    throw new ArgumentException($"External tables with query acceleration cannot exceed 900 columns. Schema has {Schema.Count} columns.");
+
                 scripts.Add(CreateQueryAccelerationPolicyScript(name));
             }
 
@@ -179,7 +182,8 @@ namespace KustoSchemaTools.Model
         private DatabaseScriptContainer CreateQueryAccelerationPolicyScript(string name)
         {
             QueryAcceleration!.Validate();
-            var json = JsonConvert.SerializeObject(QueryAcceleration, new JsonSerializerSettings
+            var normalized = QueryAcceleration.Normalize();
+            var json = JsonConvert.SerializeObject(normalized, new JsonSerializerSettings
             {
                 ContractResolver = new Serialization.PascalCaseContractResolver(),
                 NullValueHandling = NullValueHandling.Ignore,

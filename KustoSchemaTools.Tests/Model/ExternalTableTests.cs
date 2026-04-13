@@ -184,6 +184,22 @@ namespace KustoSchemaTools.Tests
         }
 
         [Fact]
+        public void CreateScripts_DeltaWithQAOver900Columns_Throws()
+        {
+            var schema = Enumerable.Range(1, 901).ToDictionary(i => $"col{i}", i => "string");
+            var table = new ExternalTable
+            {
+                Kind = "delta",
+                ConnectionString = "https://test.blob.core.windows.net/container;impersonate",
+                Schema = schema,
+                QueryAcceleration = new QueryAccelerationPolicy { IsEnabled = true, Hot = "7d" }
+            };
+
+            var ex = Assert.Throws<ArgumentException>(() => table.CreateScripts("MyTable", true));
+            Assert.Contains("900 columns", ex.Message);
+        }
+
+        [Fact]
         public void QueryAccelerationPolicy_Validate_HotBelowMinimum_Throws()
         {
             var policy = new QueryAccelerationPolicy
@@ -232,6 +248,78 @@ namespace KustoSchemaTools.Tests
 
             // Should not throw
             policy.Validate();
+        }
+
+        [Fact]
+        public void QueryAccelerationPolicy_Validate_KustoShorthand_7d_Succeeds()
+        {
+            var policy = new QueryAccelerationPolicy
+            {
+                IsEnabled = true,
+                Hot = "7d"
+            };
+
+            // Should not throw
+            policy.Validate();
+        }
+
+        [Fact]
+        public void QueryAccelerationPolicy_Validate_KustoShorthand_30d_Succeeds()
+        {
+            var policy = new QueryAccelerationPolicy
+            {
+                IsEnabled = true,
+                Hot = "30d"
+            };
+
+            policy.Validate();
+        }
+
+        [Fact]
+        public void QueryAccelerationPolicy_Validate_KustoShorthand_0d_BelowMinimum_Throws()
+        {
+            var policy = new QueryAccelerationPolicy
+            {
+                IsEnabled = true,
+                Hot = "0d"
+            };
+
+            var ex = Assert.Throws<ArgumentException>(() => policy.Validate());
+            Assert.Contains("at least 1 day", ex.Message);
+        }
+
+        [Fact]
+        public void CreateScripts_DeltaWithShorthandHot_NormalizesToClusterFormat()
+        {
+            var table = CreateDeltaTable(new QueryAccelerationPolicy
+            {
+                IsEnabled = true,
+                Hot = "7d"
+            });
+
+            var scripts = table.CreateScripts("MyTable", true);
+            var qaScript = scripts.Single(s => s.Kind == "QueryAccelerationPolicy");
+
+            // "7d" should be normalized to "7.00:00:00" in the generated script
+            Assert.Contains("\"Hot\":\"7.00:00:00\"", qaScript.Script.Text);
+            Assert.DoesNotContain("\"Hot\":\"7d\"", qaScript.Script.Text);
+        }
+
+        [Fact]
+        public void CreateScripts_DeltaWithShorthandMaxAge_NormalizesToClusterFormat()
+        {
+            var table = CreateDeltaTable(new QueryAccelerationPolicy
+            {
+                IsEnabled = true,
+                Hot = "30d",
+                MaxAge = "5m"
+            });
+
+            // "5m" is not a valid .NET or Kusto shorthand — should pass through as-is
+            // But "30d" should normalize to "30.00:00:00"
+            var scripts = table.CreateScripts("MyTable", true);
+            var qaScript = scripts.Single(s => s.Kind == "QueryAccelerationPolicy");
+            Assert.Contains("\"Hot\":\"30.00:00:00\"", qaScript.Script.Text);
         }
 
         #endregion
