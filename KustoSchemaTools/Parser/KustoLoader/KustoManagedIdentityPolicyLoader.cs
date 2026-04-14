@@ -1,41 +1,27 @@
 using Kusto.Data.Common;
 using KustoSchemaTools.Model;
 using KustoSchemaTools.Plugins;
-using Newtonsoft.Json;
 
 namespace KustoSchemaTools.Parser.KustoLoader
 {
     public class KustoManagedIdentityPolicyLoader : IKustoBulkEntitiesLoader
     {
-        const string script = @"
-.show database policy managed_identity
-| project Policies = parse_json(Policy)
-| mv-expand Policy = Policies
-| project ObjectId = tostring(Policy.ObjectId), AllowedUsages = tostring(Policy.AllowedUsages)";
+        const string script = ".show database policy managed_identity | project Policy";
 
         public async Task Load(Database database, string databaseName, KustoClient kusto)
         {
             var response = await kusto.Client.ExecuteQueryAsync(databaseName, script, new ClientRequestProperties());
-            var rows = response.As<ManagedIdentityRow>();
+            var rows = response.As<ManagedIdentityRawRow>();
+            var policyJson = rows.FirstOrDefault()?.Policy ?? "[]";
+
             if (database.Policies == null)
                 database.Policies = new DatabasePolicies();
-            database.Policies.ManagedIdentity = rows
-                .Select(r => new ManagedIdentityPolicy
-                {
-                    ObjectId = r.ObjectId,
-                    AllowedUsages = r.AllowedUsages
-                        .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                        .OrderBy(u => u)
-                        .ToList()
-                })
-                .OrderBy(p => p.ObjectId)
-                .ToList();
+            database.Policies.ManagedIdentity = ManagedIdentityPolicy.ParseFromPolicyJson(policyJson);
         }
 
-        private class ManagedIdentityRow
+        private class ManagedIdentityRawRow
         {
-            public string ObjectId { get; set; }
-            public string AllowedUsages { get; set; }
+            public string Policy { get; set; }
         }
     }
 }

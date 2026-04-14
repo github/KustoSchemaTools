@@ -5,6 +5,109 @@ using Moq;
 
 namespace KustoSchemaTools.Tests.ManagedIdentity
 {
+    public class ManagedIdentityPolicyParseTests
+    {
+        [Fact]
+        public void ParseFromPolicyJson_SinglePolicy_ExtractsObjectIdAndClientId()
+        {
+            var json = @"[
+                {
+                    ""ObjectId"": ""8749feae-888c-446b-9f38-26f0c38ba1cd"",
+                    ""ClientId"": ""1de2a36c-bba4-4380-be8d-5f400303219b"",
+                    ""TenantId"": ""398a6654-997b-47e9-b12b-9515b896b4de"",
+                    ""DisplayName"": ""my-identity"",
+                    ""IsSystem"": false,
+                    ""AllowedUsages"": ""AutomatedFlows""
+                }
+            ]";
+
+            var result = ManagedIdentityPolicy.ParseFromPolicyJson(json);
+
+            Assert.Single(result);
+            Assert.Equal("8749feae-888c-446b-9f38-26f0c38ba1cd", result[0].ObjectId);
+            Assert.Equal("1de2a36c-bba4-4380-be8d-5f400303219b", result[0].ClientId);
+            Assert.Equal(new List<string> { "AutomatedFlows" }, result[0].AllowedUsages);
+        }
+
+        [Fact]
+        public void ParseFromPolicyJson_MultipleUsages_SplitsAndSortsAlphabetically()
+        {
+            var json = @"[
+                {
+                    ""ObjectId"": ""aaaa"",
+                    ""ClientId"": ""bbbb"",
+                    ""AllowedUsages"": ""NativeIngestion, AutomatedFlows, ExternalTable""
+                }
+            ]";
+
+            var result = ManagedIdentityPolicy.ParseFromPolicyJson(json);
+
+            Assert.Equal(new List<string> { "AutomatedFlows", "ExternalTable", "NativeIngestion" }, result[0].AllowedUsages);
+        }
+
+        [Fact]
+        public void ParseFromPolicyJson_MultiplePolicies_SortsByObjectId()
+        {
+            var json = @"[
+                { ""ObjectId"": ""zzzz"", ""ClientId"": ""c1"", ""AllowedUsages"": ""ExternalTable"" },
+                { ""ObjectId"": ""aaaa"", ""ClientId"": ""c2"", ""AllowedUsages"": ""NativeIngestion"" }
+            ]";
+
+            var result = ManagedIdentityPolicy.ParseFromPolicyJson(json);
+
+            Assert.Equal(2, result.Count);
+            Assert.Equal("aaaa", result[0].ObjectId);
+            Assert.Equal("zzzz", result[1].ObjectId);
+        }
+
+        [Fact]
+        public void ParseFromPolicyJson_EmptyJson_ReturnsEmptyList()
+        {
+            Assert.Empty(ManagedIdentityPolicy.ParseFromPolicyJson("[]"));
+        }
+
+        [Fact]
+        public void ParseFromPolicyJson_NullOrWhitespace_ReturnsEmptyList()
+        {
+            Assert.Empty(ManagedIdentityPolicy.ParseFromPolicyJson(null));
+            Assert.Empty(ManagedIdentityPolicy.ParseFromPolicyJson(""));
+            Assert.Empty(ManagedIdentityPolicy.ParseFromPolicyJson("  "));
+        }
+
+        [Fact]
+        public void ParseFromPolicyJson_NullClientId_SetsClientIdToNull()
+        {
+            var json = @"[{ ""ObjectId"": ""aaaa"", ""AllowedUsages"": ""AutomatedFlows"" }]";
+
+            var result = ManagedIdentityPolicy.ParseFromPolicyJson(json);
+
+            Assert.Single(result);
+            Assert.Equal("aaaa", result[0].ObjectId);
+            Assert.Null(result[0].ClientId);
+        }
+
+        [Fact]
+        public void ParseFromPolicyJson_IgnoresExtraFields()
+        {
+            var json = @"[
+                {
+                    ""ObjectId"": ""aaaa"",
+                    ""ClientId"": ""bbbb"",
+                    ""TenantId"": ""tttt"",
+                    ""DisplayName"": ""my-identity"",
+                    ""IsSystem"": false,
+                    ""AllowedUsages"": ""AutomatedFlows""
+                }
+            ]";
+
+            var result = ManagedIdentityPolicy.ParseFromPolicyJson(json);
+
+            Assert.Single(result);
+            Assert.Equal("aaaa", result[0].ObjectId);
+            Assert.Equal("bbbb", result[0].ClientId);
+        }
+    }
+
     public class ManagedIdentityPolicyTests
     {
         [Fact]
