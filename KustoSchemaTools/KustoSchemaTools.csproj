@@ -21,4 +21,8 @@
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="KustoSchemaTools.Tests" />
+  </ItemGroup>
+
 </Project>
