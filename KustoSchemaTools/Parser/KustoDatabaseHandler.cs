@@ -31,6 +31,7 @@ namespace KustoSchemaTools.Parser
                 await plugin.Load(database, DatabaseName, Client);
 
             }
+            database.NormalizePrincipalIds();
             return database;
         }
         public async Task WriteAsync(T database)
