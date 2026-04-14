@@ -44,7 +44,7 @@ namespace KustoSchemaTools
                 structuredDiffs.Add(ConvertToStructuredDiff(clusterDiff.Cluster.Name, clusterDiff.Cluster.Url, databaseName, clusterDiff.Changes));
             }
 
-            foreach (var followerDiff in diffData.FollowerDiffs)
+            foreach (var followerDiff in diffData.FollowerDiffs.Where(f => f.Changes.Count > 0))
             {
                 structuredDiffs.Add(ConvertToStructuredDiff(followerDiff.ConnectionKey, followerDiff.ConnectionKey, followerDiff.DatabaseName, followerDiff.Changes));
             }
@@ -216,7 +216,7 @@ namespace KustoSchemaTools
                 }
             }
 
-            foreach (var followerDiff in diffData.FollowerDiffs)
+            foreach (var followerDiff in diffData.FollowerDiffs.Where(f => f.Changes.Count > 0))
             {
                 if (logDetails)
                 {
