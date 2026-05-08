@@ -26,6 +26,7 @@ namespace KustoSchemaTools.Model
         Database
     }
 
+    [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
     public enum QueryConsistency
     {
         Strong,
@@ -244,6 +245,7 @@ namespace KustoSchemaTools.Model
         public int? MaxConcurrentRequests { get; set; }
 
         [JsonProperty("ResourceKind")]
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public RateLimitResourceKind? ResourceKind { get; set; }
 
         [JsonProperty("MaxUtilization")]
