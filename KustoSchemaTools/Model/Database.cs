@@ -37,6 +37,8 @@ namespace KustoSchemaTools.Model
 
         public Dictionary<string, FollowerDatabase> Followers { get; set; } = new Dictionary<string, FollowerDatabase>();
 
+        public DatabasePolicies Policies { get; set; } = new DatabasePolicies();
+
         public string EscapedName => Name.BracketIfIdentifier();
     }
 }

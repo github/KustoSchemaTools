@@ -77,37 +77,10 @@ namespace KustoSchemaTools.Changes
                 sb.AppendLine($"</tr>");
                 if (before != null)
                 {
-                    foreach(var c in new [] { new { Change = ChangeType.Deleted, Prefix = "-" }, new { Change = ChangeType.Inserted, Prefix = "+" } })
+                    var columnDiffRendered = TryRenderColumnDiff(change.Kind, sb);
+                    if (!columnDiffRendered)
                     {
-                        var changeType = c.Change;
-                        if (diff.Lines.Any(itm => itm.Type == changeType))
-                        {
-                            sb.AppendLine("<tr>");
-                            sb.AppendLine($"    <td colspan=\"2\">{c.Change}:</td>");
-                            sb.AppendLine($"    <td colspan=\"10\"> \n\n```diff ");
-                            
-                            var relevantLines = diff.Lines.Where(itm => itm.Type == ChangeType.Unchanged || itm.Type == changeType).OrderBy(itm => itm.Position).ToList();
-                            int last = 0;
-                            for (int i = 0; i < relevantLines.Count; i++)
-                            {
-                                var b = i - 1 > 0 ? relevantLines[i - 1] : null;
-                                var current = relevantLines[i];
-                                var n = i + 1 < relevantLines.Count ? relevantLines[i + 1] : null;
-
-                                if (current.Type == changeType || b?.Type == changeType  || n?.Type == changeType)
-                                {
-                                    if(i-last > 1)
-                                    {
-                                        sb.AppendLine();
-                                    }
-
-                                    var p = current.Type == changeType ? c.Prefix : " ";
-                                    sb.AppendLine($"{p}{i}:\t{current.Text}");
-                                    last = i;
-                                }
-                            }
-                            sb.AppendLine("```\n\n</td></tr>");
-                        }
+                        RenderLineDiff(diff, sb);
                     }
                 }
                 sb.AppendLine("<tr>");
@@ -128,6 +101,64 @@ namespace KustoSchemaTools.Changes
             }
             sb.AppendLine("</table>");
             Markdown = sb.ToString();
+        }
+
+        /// <summary>
+        /// Attempts to render a column-level diff for CreateMergeTable changes.
+        /// Returns true if a column diff was rendered, false to fall back to line diff.
+        /// </summary>
+        private bool TryRenderColumnDiff(string kind, StringBuilder sb)
+        {
+            if (kind != "CreateMergeTable") return false;
+
+            var oldTable = From as Table;
+            var newTable = To as Table;
+            if (newTable?.Columns == null) return false;
+
+            var columnDiff = ColumnDiffHelper.BuildColumnDiff(oldTable?.Columns, newTable.Columns);
+            if (columnDiff == null) return false;
+
+            sb.AppendLine("<tr>");
+            sb.AppendLine("    <td colspan=\"2\">Column changes:</td>");
+            sb.AppendLine($"    <td colspan=\"10\">\n\n{columnDiff}\n\n</td>");
+            sb.AppendLine("</tr>");
+            return true;
+        }
+
+        private static void RenderLineDiff(DiffPaneModel diff, StringBuilder sb)
+        {
+            foreach (var c in new[] { new { Change = ChangeType.Deleted, Prefix = "-" }, new { Change = ChangeType.Inserted, Prefix = "+" } })
+            {
+                var changeType = c.Change;
+                if (diff.Lines.Any(itm => itm.Type == changeType))
+                {
+                    sb.AppendLine("<tr>");
+                    sb.AppendLine($"    <td colspan=\"2\">{c.Change}:</td>");
+                    sb.AppendLine($"    <td colspan=\"10\"> \n\n```diff ");
+
+                    var relevantLines = diff.Lines.Where(itm => itm.Type == ChangeType.Unchanged || itm.Type == changeType).OrderBy(itm => itm.Position).ToList();
+                    int last = 0;
+                    for (int i = 0; i < relevantLines.Count; i++)
+                    {
+                        var b = i - 1 > 0 ? relevantLines[i - 1] : null;
+                        var current = relevantLines[i];
+                        var n = i + 1 < relevantLines.Count ? relevantLines[i + 1] : null;
+
+                        if (current.Type == changeType || b?.Type == changeType || n?.Type == changeType)
+                        {
+                            if (i - last > 1)
+                            {
+                                sb.AppendLine();
+                            }
+
+                            var p = current.Type == changeType ? c.Prefix : " ";
+                            sb.AppendLine($"{p}{i}:\t{current.Text}");
+                            last = i;
+                        }
+                    }
+                    sb.AppendLine("```\n\n</td></tr>");
+                }
+            }
         }
     }
 
